@@ -1,0 +1,88 @@
+# Key Concepts
+
+This page defines the core terminology used throughout Minke's documentation.
+
+## Asset Types
+
+### DFI — Deterministic Future Income
+
+A future income stream where the amount and schedule are fixed and known in advance. Examples:
+- Token vesting schedules (cliff + linear)
+- SAFT / investor allocation tranches
+- Node license emission schedules
+- Mining reward agreements
+
+DFI is the primary asset class Minke Phase 1 handles. Because the schedule is deterministic, no oracle is needed.
+
+### VFI — Variable Future Income
+
+A future income stream where the amount depends on external factors — utilisation rates, price feeds, governance decisions. Examples:
+- Liquid staking yields (stETH)
+- AMM LP fees
+- Lending protocol interest
+
+VFI requires Minke Phase 2 (Yield Token). Phase 1 VT is not suitable for VFI.
+
+## Protocol Primitives
+
+### Vesting Suite
+
+A project-level deployment consisting of a `Vault` and `ERC1155NFT` contract, created via `VestingFactory`. Each project has one suite; within it, the project owner creates individual tranches.
+
+### Tranche
+
+A specific vesting allocation within a suite, identified by a `trancheId`. Each tranche has:
+- A fixed vesting schedule (start, cliff, end, total amount)
+- Its own `VTToken` (ERC-20)
+- Its own `BuybackPool`
+
+### ERC-1155 Allocation NFT
+
+A token representing a recipient's vesting allocation. The project owner mints these and distributes them to recipients. Staking an ERC-1155 NFT in the Vault mints VT to the holder at a fixed rate (`vtPerNft`).
+
+### VT — Vesting Token
+
+A fungible ERC-20 minted when recipients stake their ERC-1155 allocation NFTs in the Vault. VTs represent a claim on the underlying token at vesting maturity. They are:
+- Minted only by the Vault (on NFT stake)
+- Burned only by the BuybackPool (on T pulls, or Phase 2 redemption)
+- Freely tradable as standard ERC-20
+
+### YT — Yield Token (Phase 2)
+
+A future token type designed for VFI streams where yield is variable. Not yet live — see the roadmap for planned release.
+
+### BuybackPool
+
+The staking and distribution contract deployed alongside each VTToken. VT holders stake VT here; the pool automatically pulls T from the Vault per the release schedule, burns VT 1:1 as T arrives, and distributes T to stakers proportionally. A protocol fee (e.g. 5%) is deducted from each distribution. After vesting ends, `redeemVT()` enables 1:1 Phase 2 redemption from the pool's `excessT` reserve.
+
+## Staking Mechanics
+
+### Shares
+
+When a user stakes VT in the BuybackPool, they receive shares at the current share-to-VT ratio. As VT is burned during T pulls, share value (in VT terms) decreases. Withdrawals from the BuybackPool are denominated in shares, not VT amount.
+
+### accVTPerShare
+
+A global accumulator tracking cumulative VT burned per share. Increases each time a T pull occurs and VT is burned. Used to calculate each staker's proportional pending claimable T.
+
+### claimableT
+
+The T amount accrued to a staker, calculated as their proportional share of all T pulled since their last interaction, minus the protocol fee. Transferred to the staker when they call `claimT()`.
+
+## Economic Terms
+
+### Present Value (PV)
+
+The market-determined value today of a future cash flow. In Minke, VTs trade at a discount to par (1 underlying) until maturity. The discount reflects time value and risk.
+
+### excessT
+
+T accumulated in the BuybackPool when more T arrives from the Vault than VT can be burned (e.g. near dust protection limits). Reserved for Phase 2 `redeemVT()` at 1:1.
+
+### Protocol Fee
+
+A fee (e.g. 5%) deducted from T distributions to BuybackPool stakers. Set as `userRewardRate` in basis points (e.g. 950 = 95% to stakers, 5% to protocol). Immutable after tranche deployment. Not charged at NFT staking, VT minting, or Phase 2 redemption.
+
+<Callout type="note">
+The fee rate is fixed at contract deployment. There is no admin key that can change fee parameters post-deploy.
+</Callout>

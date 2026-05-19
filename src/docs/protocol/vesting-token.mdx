@@ -1,0 +1,112 @@
+# Vesting Token (VT)
+
+A Vesting Token (VT) is a fungible ERC-20 that represents a claim on the underlying project token (T) tied to a specific vesting tranche. VTs are minted when recipients stake their ERC-1155 allocation NFTs in the Vault.
+
+## The Vesting Suite Architecture
+
+Each project using Minke has one **Vesting Suite**: a `Vault` + `ERC1155NFT` pair deployed by `VestingFactory`. Within a suite, the project owner creates individual **tranches** — each tranche has its own `VTToken` and `BuybackPool`.
+
+```
+VestingFactory
+  └── Vault  (holds project T tokens)
+        └── ERC1155NFT  (allocation NFTs)
+        └── Tranche 0
+              ├── VTToken   (ERC-20)
+              └── BuybackPool
+        └── Tranche 1
+              ├── VTToken
+              └── BuybackPool
+```
+
+## Minting VT
+
+VT is minted when a recipient stakes their ERC-1155 allocation NFT in the Vault:
+
+```solidity
+function stakeNFT(uint256 trancheId, uint256 amount) external;
+```
+
+The Vault mints VT to the caller at a fixed rate set per tranche (`vtPerNft`):
+
+```
+Stake 1 NFT (Tranche 0, vtPerNft = 10,000)
+→ Vault mints 10,000 VT to recipient
+```
+
+- **Only the Vault can mint VT.** The VTToken contract enforces this on-chain.
+- **Only the BuybackPool can burn VT.** Burns occur automatically when T is pulled from the Vault per the release schedule.
+
+VTs are standard ERC-20 tokens: freely transferable, tradable on any DEX.
+
+## What VT Holders Can Do
+
+### Option A — Stake in BuybackPool
+
+Stake VT in the tranche's `BuybackPool`. The pool automatically pulls T from the Vault per the vesting schedule and distributes it to stakers proportionally, minus a protocol fee (e.g. 5%):
+
+```solidity
+// Stake VT into BuybackPool
+function stakeVT(uint256 amount) external;
+
+// Claim accumulated T (fee already deducted at distribution)
+function claimT() external;
+
+// Withdraw remaining VT (by shares, not by VT amount)
+function withdrawVT(uint256 shares) external;
+```
+
+See [BuybackPool](/protocol/buyback-pool) for full mechanics.
+
+### Option B — Trade on AMM
+
+VTs are standard ERC-20 tokens. Holders can sell them on DEX. Secondary buyers get discounted exposure to the underlying vesting stream.
+
+### Option C — Wait for Phase 2
+
+Hold VT until the vesting schedule ends. Call `redeemVT()` on the BuybackPool for 1:1 redemption with no fee.
+
+## Phase 2: 1:1 Redemption
+
+Once the release schedule has fully completed and `vestingEnded` is set to `true` on the BuybackPool, VT holders can redeem:
+
+```solidity
+function redeemVT(uint256 vtAmount) external;
+```
+
+Burns `vtAmount` VT 1:1 from the BuybackPool's `excessT` reserve. No protocol fee.
+
+<Callout type="tip">
+Phase 2 redemption is always exactly 1:1, with no protocol fee. VT holders who did not stake during Phase 1 can still redeem their full par value at maturity.
+</Callout>
+
+## VT Token Properties
+
+| Property | Value |
+|---|---|
+| Standard | ERC-20 |
+| Minting | Only Vault (on NFT stake) |
+| Burning | Only BuybackPool (on Vault T pull, or Phase 2 redeemVT) |
+| Transferability | Fully transferable — no restrictions |
+| Decimals | Matches the underlying token |
+
+## Lifecycle Summary
+
+```
+Project deposits T → Vault
+Project mints ERC-1155 NFTs → recipients
+         ↓
+Recipients stake NFT → Vault mints VT (1:1 per vtPerNft)
+         ↓
+     Phase 1 (vesting active)
+  ┌──────────────────────────────────────────────────┐
+  │  Stake VT in BuybackPool                         │
+  │  → BP pulls T from Vault per schedule            │
+  │  → Burns VT 1:1, distributes T (minus e.g. 5%)  │
+  │  → claimT() to receive T                         │
+  │  OR                                              │
+  │  Sell / trade VT on AMM at market price          │
+  └──────────────────────────────────────────────────┘
+         ↓
+     Phase 2 (vestingEnded = true)
+  redeemVT() → 1:1 T from excessT (no fee)
+```
