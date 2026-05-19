@@ -11,7 +11,7 @@ public_folder: "/img/uploads"
 collections:
   - name: "docs"
     label: "说明文档 (Docs)"
-    folder: "docs"
+    folder: "src/docs"
     create: true
     slug: "{{slug}}"
     fields:
