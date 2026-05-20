@@ -5,6 +5,8 @@ import remarkGfm from "remark-gfm";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 const rawPort = process.env.PORT ?? "5173";
 const port = Number(rawPort);
 if (Number.isNaN(port) || port <= 0) throw new Error(`Invalid PORT value: "${rawPort}"`);
@@ -13,14 +15,10 @@ const basePath = process.env.BASE_PATH ?? "/";
 
 export default defineConfig({
   base: basePath,
-  plugins: [
-    {
-      enforce: "pre",
-      ...mdx({ remarkPlugins: [remarkGfm], providerImportSource: "@mdx-js/react" }),
-    },
-    react(),
-    tailwindcss(),
-  ],
+  plugins: [{
+    enforce: "pre",
+    ...mdx({ remarkPlugins: [remarkGfm], providerImportSource: "@mdx-js/react" }),
+  }, react(), tailwindcss(), cloudflare()],
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
