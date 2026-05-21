@@ -17,8 +17,8 @@ None of this is necessary. Minke provides an alternative.
 A recipient with a vesting allocation (advisor, investor, team member) can:
 
 1. Stake their allocation NFT in the Vault to receive VTs 1:1
-2. Sell VTs on a secondary market at a time-discount — getting liquidity today without breaking vesting terms
-3. The buyer takes on the time risk and earns T via BuybackPool or holds to Phase 2
+2. Sell VTs on a secondary market at a time discount — getting liquidity today without breaking vesting terms
+3. The buyer takes on the time risk and earns T via RedeemPool or holds to Phase 2
 
 <Callout type="tip" title="Vesting terms preserved">
 The underlying tokens remain in the Vault on the original vesting schedule. From the protocol's perspective, nothing changes. Only the economic claim has been tokenized and made liquid.
@@ -42,7 +42,7 @@ Result: Receives ~410,000 TOKEN today ✓
 ── BUYER (investor) ───────────────────────────────────────────
 Buys:   500,000 VT at 0.82 T per VT → pays ~410,000 TOKEN
 
-Option A: Stake in BuybackPool
+Option A: Stake in RedeemPool
           → Receives TOKEN gradually over 24 months as vault releases
           → e.g. ~19,792 TOKEN/month × 0.95 = ~18,802 TOKEN/month (after fee)
           → Total ~451,250 TOKEN over 24 months (vs 410,000 TOKEN paid)
@@ -59,9 +59,9 @@ SAFTs are typically larger ($1M–$100M) and have more complex vesting terms (cl
 
 | SAFT Feature | Minke Mechanism |
 |---|---|
-| Cliff period | BuybackPool releases begin only after `releaseStartTime` (cliff end) |
+| Cliff period | RedeemPool releases begin only after `releaseStartTime` (cliff end) |
 | Linear unlock | Vault releases pro-rata amounts per interval per schedule |
-| Multiple tranches | Multiple VTToken + BuybackPool pairs, one per tranche |
+| Multiple tranches | Multiple VTToken + RedeemPool pairs, one per tranche |
 | Token Generation Event | Deposit occurs at TGE; schedule starts from that timestamp |
 
 ## Benefits for Protocols
