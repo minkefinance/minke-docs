@@ -1,16 +1,16 @@
 # Redemption
 
-Minke's redemption model has two distinct phases: Phase 1 (gradual T distribution as tokens vest via the BuybackPool) and Phase 2 (1:1 redemption from the excessT reserve after vesting ends).
+Minke's redemption model has two distinct phases: Phase 1 (gradual T distribution as tokens vest via the RedeemPool) and Phase 2 (1:1 redemption from the excessT reserve after vesting ends).
 
-## Phase 1: BuybackPool Staking
+## Phase 1: RedeemPool Staking
 
-During Phase 1, VT holders can stake their VT in the BuybackPool to receive T as it vests from the Vault. The pool pulls T automatically based on the release schedule.
+During Phase 1, VT holders can stake their VT in the RedeemPool to receive T as it vests from the Vault. The pool pulls T automatically based on the release schedule.
 
 ### How Phase 1 Works
 
-1. VT holder stakes VT in BuybackPool (`stakeVT`)
-2. BuybackPool pulls T from Vault per release schedule
-3. For each T pulled: equivalent VT is burned 1:1; T is distributed to stakers proportionally (minus e.g. 5% protocol fee)
+1. VT holder stakes VT in RedeemPool (`stakeVT`)
+2. RedeemPool pulls T from Vault per the release schedule
+3. For each T pulled: equivalent VT is burned 1:1; T is distributed to stakers proportionally (minus e.g., 5% protocol fee)
 4. Staker calls `claimT()` to withdraw their accumulated T
 
 ```
@@ -23,7 +23,7 @@ staker calls claimT() → receives pro-rata T (minus fee)
 Phase 1 claims are gradual. T arrives over the vesting schedule, not all at once. Each pull burns VT 1:1, reducing the staker's outstanding VT position over time.
 </Callout>
 
-### Withdrawing From BuybackPool
+### Withdrawing From RedeemPool
 
 Stakers can withdraw at any time by calling `withdrawVT(uint256 shares)`. The parameter is the number of **shares** (not VT amount), because share value decreases as VT is burned during pulls. Pending claimable T remains withdrawable after exiting.
 
@@ -31,11 +31,11 @@ Stakers can withdraw at any time by calling `withdrawVT(uint256 shares)`. The pa
 
 ### When Phase 2 Opens
 
-Once the release schedule has fully run, `vestingEnded` is set to `true` on the BuybackPool. New staking is disabled. VT holders — including those who never staked — can now call `redeemVT()`.
+Once the release schedule has fully run, `vestingEnded` is set to `true` on the RedeemPool. New staking is disabled. VT holders — including those who never staked — can now call `redeemVT()`.
 
 ### The excessT Reserve
 
-`excessT` accumulates in the BuybackPool when more T is pulled from the Vault than can be burned. This excess is reserved for Phase 2 1:1 redemptions.
+`excessT` accumulates in the RedeemPool when more T is pulled from the Vault than can be burned. This excess is reserved for Phase 2 1:1 redemptions.
 
 ### Redeeming VTs
 
@@ -50,7 +50,7 @@ Burns `vtAmount` VT from the caller's wallet and transfers an equal amount of T 
 Suppose a tranche is created with 1,000,000 TOKEN in the Vault and 1,000,000 VT minted:
 
 ```
-Phase 1 — BuybackPool activity:
+Phase 1 — RedeemPool activity:
   Vault releases 600,000 T total (per schedule)
   BP pulls 600,000 T → burns 600,000 VT
   Stakers receive: 600,000 × 0.95 = 570,000 T  (95% after fee)
@@ -74,16 +74,16 @@ Regardless of how much activity happened in Phase 1, outstanding VT always redee
 
 | Event | Contract | Who Can Call | When |
 |---|---|---|---|
-| `stakeVT` | BuybackPool | VT holder | Phase 1 |
-| `claimT` | BuybackPool | Staker | Phase 1 |
-| `withdrawVT` | BuybackPool | Staker | Phase 1 |
-| `redeemVT` | BuybackPool | VT holder | Phase 2 only, 1:1 no fee |
+| `stakeVT` | RedeemPool | VT holder | Phase 1 |
+| `claimT` | RedeemPool | Staker | Phase 1 |
+| `withdrawVT` | RedeemPool | Staker | Phase 1 |
+| `redeemVT` | RedeemPool | VT holder | Phase 2 only, 1:1 no fee |
 
 ## Edge Cases
 
 ### What if nobody stakes in Phase 1?
 
-All T released from the Vault accumulates as `excessT` in the BuybackPool. No VT is burned. Phase 2 `redeemVT()` distributes the full amount 1:1 (minus any dust).
+All T released from the Vault accumulates as `excessT` in the RedeemPool. No VT is burned. Phase 2 `redeemVT()` distributes the full amount 1:1 (minus any dust).
 
 ### What if all VTs are burned in Phase 1?
 
