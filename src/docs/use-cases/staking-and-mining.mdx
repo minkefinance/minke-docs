@@ -1,10 +1,10 @@
 # Staking and Mining
 
-Proof-of-Stake validators and proof-of-work miners accumulate future rewards that are structurally similar to vesting schedules: deterministic rates, known schedules, rule-based emissions. Minke tokenises these streams so operators can access their value today.
+Proof-of-Stake validators and proof-of-work miners accumulate future rewards that are structurally similar to vesting schedules: deterministic rates, known schedules, and rule-based emissions. Minke tokenises these streams so operators can access their value today.
 
 ## Staking Rewards as DFI
 
-A validator running on Ethereum earns a predictable APY (currently ~4%). While individual block rewards have slight variance, the total expected reward over a fixed period is calculable and can be treated as DFI.
+A validator running on Ethereum earns a predictable APY (currently ~4%). While individual block rewards have slight variance, the total expected reward over a predictable period is calculable and can be treated as DFI.
 
 The same logic applies to:
 
@@ -14,16 +14,16 @@ The same logic applies to:
 - **Binance Smart Chain** — BNB staking emissions
 
 <Callout type="info">
-Minke's VT model works best for staking positions where the reward amount and schedule are fixed at commitment time. Liquid staking derivatives (stETH, rETH) represent already-liquid staking positions and require the YT mechanism instead.
+Minke's VT model works best for staking positions where the reward amount and schedule are predictable at commitment time. Liquid staking derivatives (stETH, rETH) represent already-liquid staking positions and require the YT mechanism instead.
 </Callout>
 
 ## Mining Future Rewards
 
 Bitcoin miners have known revenue curves based on hashrate share, difficulty adjustments, and block rewards. While individual block rewards are probabilistic, a mining operation with stable hashrate can project future BTC income with reasonable confidence.
 
-Some mining entities write binding agreements to receive a fixed BTC amount over a defined period (hash rate agreements). These are pure DFI and ideal Minke candidates.
+Some mining entities write binding agreements to receive a predictable BTC amount over a defined period (hash rate agreements). These are pure DFI and ideal Minke candidates.
 
-Similarly, **DePIN mining operations** emit tokens to node operators on fixed schedules. See [DePIN and AI Nodes](/use-cases/depin-and-ai-nodes) for details.
+Similarly, **DePIN mining operations** emit tokens to node operators on predictable schedules. See [DePIN and AI Nodes](/use-cases/depin-and-ai-nodes) for details.
 
 ## Example: ETH Validator Pool
 
