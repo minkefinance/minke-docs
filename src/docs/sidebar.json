@@ -10,7 +10,7 @@
   { "slug": "protocol/redemption",                "title": "Redemption",               "section": "Protocol",            "order": 9  },
   { "slug": "protocol/design-principles",         "title": "Design Principles",        "section": "Protocol",            "order": 10 },
   { "slug": "protocol/fee-structure",             "title": "Fee Structure",            "section": "Protocol",            "order": 11 },
-  { "slug": "protocol/buyback-pool",              "title": "BuybackPool",              "section": "Protocol",            "order": 12 },
+  { "slug": "protocol/redeem-pool",              "title": "RedeemPool",              "section": "Protocol",            "order": 12 },
   { "slug": "protocol/security",                  "title": "Security",                 "section": "Protocol",            "order": 13 },
   { "slug": "use-cases/safs-and-vesting",         "title": "SAFTs and Vesting",        "section": "Use Cases",           "order": 14 },
   { "slug": "use-cases/staking-and-mining",       "title": "Staking and Mining",       "section": "Use Cases",           "order": 15 },
