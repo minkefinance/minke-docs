@@ -7,7 +7,7 @@ Minke introduces a formal classification framework for on-chain future income: *
 DFI is any on-chain income stream where both the **amount** and the **schedule** are fully known in advance.
 
 ### Characteristics
-- Fixed principal amount per time unit
+- Predictable principal amount per time unit
 - Predictable unlock or maturity date
 - No oracle dependency for valuation
 - Compatible with Phase 1 of Minke (Vesting Token)
@@ -20,7 +20,7 @@ DFI is any on-chain income stream where both the **amount** and the **schedule**
 | SAFT allocations | Legal agreement + unlock contract | Investment amount |
 | Node licenses | Protocol emission schedule | Published emission curve |
 | Tokenized RWA bonds | Bond indenture | Face value + coupon |
-| Fixed-term staking | Validator lockup period | Committed reward APR |
+| Predictable-term staking | Validator lockup period | Committed reward APR |
 
 <Callout type="info">
 DFI positions are ideal for Minke's **Vesting Token (VT)** model. Because both amount and schedule are known, VTs can be priced against a discount curve without any oracle.
@@ -51,7 +51,7 @@ VFI is any on-chain income stream where the **amount** is unknown at origination
 The DFI/VFI classification is not just taxonomic — it determines the correct pricing model and risk structure for each protocol primitive.
 
 ```
-DFI → fixed schedule → no oracle needed → VT (Phase 1)
+DFI → predictable schedule → no oracle needed → VT (Phase 1)
 VFI → variable yield → needs rate model → YT (Phase 2)
 ```
 
@@ -68,7 +68,7 @@ The DFI model was specifically chosen for Phase 1 because it eliminates the need
 
 When a protocol or individual deposits a position into Minke, the first question is classification:
 
-1. **Is the total future amount fixed?** → DFI
+1. **Is the total future amount predictable?** → DFI
 2. **Is the schedule deterministic?** → DFI (still)
 3. **Does the yield depend on future market conditions?** → VFI
 
