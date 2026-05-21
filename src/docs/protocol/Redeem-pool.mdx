@@ -62,7 +62,7 @@ Returns the VT equivalent of `shares` to the caller. Note: the parameter is **sh
 function claimT() external;
 ```
 
-Triggers a Vault pull first, then transfers all accumulated claimable T to the caller. The fee (e.g. 5%) has already been deducted from the accumulated amount at distribution time.
+Triggers a Vault pull first, then transfers all accumulated claimable T to the caller. The fee (e.g., 5%) has already been deducted from the accumulated amount at distribution time.
 
 ## Release Schedule
 
@@ -78,7 +78,7 @@ Pulls are lazy: they happen automatically when a user calls `stakeVT` or `claimT
 
 ## Price Floor Effect
 
-Because staking in the BuybackPool guarantees receiving (1 − fee) of the underlying over time, it creates a soft floor for VT market prices. VTs trading below `(1 − fee)` on an AMM represent an arbitrage: a buyer could purchase cheap VTs and stake them to recover, e.g., 95% of par.
+Because staking in the RedeemPool guarantees receiving (1 − fee) of the underlying over time, it creates a soft floor for VT market prices. VTs trading below `(1 − fee)` on an AMM represent an arbitrage: a buyer could purchase cheap VTs and stake them to recover, e.g., 95% of par.
 
 ```
 Soft price floor ≈ (1 − protocol_fee_rate)
