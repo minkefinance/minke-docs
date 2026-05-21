@@ -29,26 +29,26 @@ A Vesting Token — a fungible ERC-20 minted when a recipient stakes their alloc
 They are held in a non-custodial smart contract (the Vault). Neither Minke nor any third party can withdraw them. Only the vesting schedule governs their release.
 
 **Can I get my tokens back before maturity?**
-You can sell your VTs on an AMM at a market discount, or stake VTs in the BuybackPool to receive the underlying gradually as it vests (with a protocol fee). Direct early withdrawal is not possible — this is by design.
+You can sell your VTs on an AMM at a market discount, or stake VTs in the RedeemPool to receive the underlying gradually as it vests (with a protocol fee). Direct early withdrawal is not possible — this is by design.
 
 **What is the protocol fee?**
-A fee (e.g. 1–5%) deducted from distributions to BuybackPool stakers. It is only charged when you stake VT in the BuybackPool and receive the underlying token. There is no fee at deposit, at VT minting, or at Phase 2 redemption. See [Fee Structure](/protocol/fee-structure).
+A fee (e.g., 1–5%) is deducted from distributions to RedeemPool stakers. It is only charged when you stake VT in the RedeemPool and receive the underlying token. There is no fee at deposit, at VT minting, or at Phase 2 redemption. See [Fee Structure](/protocol/fee-structure).
 
 **Why does Minke not need an oracle?**
 DFI vesting schedules are deterministic — the contract knows exactly how many tokens vest at each moment without an external price feed. See [Design Principles](/protocol/design-principles).
 
 **Can I lose money using Minke?**
-If you sell VTs at a discount before maturity, you receive less than par. If you stake in the BuybackPool, you pay the protocol fee. If you hold VTs to Phase 2, you receive the underlying 1:1 with no fee. The main risks are smart contract risk (bugs) and underlying token price risk.
+If you sell VTs at a discount before maturity, you receive less than par. If you stake in the RedeemPool, you pay the protocol fee. If you hold VTs to Phase 2, you receive the underlying 1:1 with no fee. The main risks are smart contract risk (bugs) and underlying token price risk.
 
-## BuybackPool
+## RedeemPool
 
-**What is the BuybackPool?**
-A staking pool deployed alongside each tranche. VT holders stake their VTs here; the pool automatically pulls the underlying token from the Vault per the vesting release schedule, burns VT 1:1 as T arrives, and distributes T to stakers proportionally (minus a small protocol fee). See [BuybackPool](/protocol/buyback-pool).
+**What is the RedeemPool?**
+A staking pool is deployed alongside each tranche. VT holders stake their VTs here; the pool automatically pulls the underlying token from the Vault per the vesting release schedule, burns VT 1:1 as T arrives, and distributes T to stakers proportionally (minus a small protocol fee). See [RedeemPool](/protocol/redeem-pool).
 
-**How is T released into the BuybackPool?**
-The Vault releases T to the BuybackPool per a pre-set schedule (configurable cliff, interval, and batch size). Releases are not instant — liquidity in the pool grows as the schedule progresses.
+**How is T released into the RedeemPool?**
+The Vault releases T to the RedeemPool per a pre-set schedule (configurable cliff, interval, and batch size). Releases are not instant — liquidity in the pool grows as the schedule progresses.
 
-**What happens if I stake in the BuybackPool early?**
+**What happens if I stake in the RedeemPool early?**
 You start accumulating T as soon as the first vault release occurs after your stake (subject to the `releaseStartTime` cliff). Staking before the cliff has no downside — you simply accumulate nothing until the release window opens.
 
 ## Trading VTs
@@ -60,7 +60,7 @@ VTs are standard ERC-20 tokens tradable on any DEX. Minke will maintain official
 Yes, fully. There are no transfer restrictions on VTs.
 
 **What determines the VT price?**
-Market supply and demand, anchored by the 1:1 Phase 2 redemption guarantee. VTs typically trade at a discount to par that reflects time value and risk, with the BuybackPool staking yield creating a soft price floor.
+Market supply and demand, anchored by the 1:1 Phase 2 redemption guarantee. VTs typically trade at a discount to par that reflects time value and risk, with the RedeemPool staking yield creating a soft price floor.
 
 <Callout type="info">
 More FAQs will be added regularly. For unanswered questions, reach out on Discord.
