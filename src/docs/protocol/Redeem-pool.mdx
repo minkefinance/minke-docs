@@ -1,23 +1,23 @@
-# BuybackPool
+# RedeemPool
 
-The BuybackPool is the core mechanism through which VT holders receive underlying tokens (T) during Phase 1. Users stake VT in the pool; the pool automatically pulls T from the Vault per the vesting release schedule, burns VT 1:1 as T arrives, and distributes T to stakers proportionally — minus a protocol fee (e.g. 5%).
+The RedeemPool is the core mechanism through which VT holders receive underlying tokens (T) during Phase 1. Users stake VT in the pool; the pool automatically pulls T from the Vault per the vesting release schedule, burns VT 1:1 as T arrives, and distributes T to stakers proportionally — minus a protocol fee (e.g., 5%).
 
 ## How It Works
 
 ```
 User stakes VT → receives shares
                       ↓
-   BP pulls T from Vault per release schedule
+   BP pulls T from Vault per the release schedule
                       ↓
    For every T pulled: 1 VT is burned 1:1
                       ↓
    Stakers accumulate claimable T
-   (pro-rata by shares, minus e.g. 5% protocol fee)
+   (pro-rata by shares, minus e.g., 5% protocol fee)
                       ↓
    User calls claimT() → receives their T
 ```
 
-The BuybackPool does not hold a pre-funded reserve of T. Liquidity grows gradually as the vesting schedule releases tokens from the Vault.
+The RedeemPool does not hold a pre-funded reserve of T. Liquidity grows gradually as the vesting schedule releases tokens from the Vault.
 
 ## Numeric Example
 
@@ -36,7 +36,7 @@ User's claimable T += 10 × (5/50) × 0.95 = 0.95 T
 The user will continue to wait for the subsequent allocation
 ```
 
-The 5% fee (e.g. 0.05 T here) accrues to the protocol treasury. Users receive 95%.
+The 5% fee (e.g., 0.05 T here) accrues to the protocol treasury. Users receive 95%.
 
 ## User Functions
 
@@ -66,7 +66,7 @@ Triggers a Vault pull first, then transfers all accumulated claimable T to the c
 
 ## Release Schedule
 
-The Vault must explicitly approve the BuybackPool to pull T (`approvePool` or `unlimitedApprovePool`). The pull behaviour is controlled by three parameters set at tranche creation:
+The Vault must explicitly approve the RedeemPool to pull T (`approvePool` or `unlimitedApprovePool`). The pull behaviour is controlled by three parameters set at tranche creation:
 
 | Parameter | Description |
 |---|---|
@@ -78,11 +78,11 @@ Pulls are lazy: they happen automatically when a user calls `stakeVT` or `claimT
 
 ## Price Floor Effect
 
-Because staking in the BuybackPool guarantees receiving (1 − fee) of the underlying over time, it creates a soft floor for VT market prices. VTs trading below `(1 − fee)` on an AMM represent an arbitrage: a buyer could purchase cheap VTs and stake them to recover e.g. 95% of par.
+Because staking in the BuybackPool guarantees receiving (1 − fee) of the underlying over time, it creates a soft floor for VT market prices. VTs trading below `(1 − fee)` on an AMM represent an arbitrage: a buyer could purchase cheap VTs and stake them to recover, e.g., 95% of par.
 
 ```
 Soft price floor ≈ (1 − protocol_fee_rate)
-e.g. 0.95 underlying per VT
+e.g., 0.95 underlying per VT
 ```
 
 ## Dust Protection
