@@ -1,0 +1,13 @@
+# Glossary
+
+| Term | Meaning |
+|---|---|
+| **DFI Oracle** | On-chain contract storing the release schedule (Standard Pool) or rate curve (Custom Pool). Deployed as an EIP-1167 clone by the factory. |
+| **VT (Vesting Token)** | Per-pool ERC-20 token representing an investor's vesting entitlement. Burned on claim. |
+| **T (DFI Token)** | The ERC-20 token being vested — your project's DFI token. |
+| **Redeem Pool** | Contract that processes investor claims: pulls T from the vault per the oracle, burns VT, pays out 95%. |
+| **Full Cover** | Vault flag (Custom Pool) that caps VT minting to the vault's live T balance. Uses `VT.totalSupply()` for accurate capacity. |
+| **Lump-Sum Mode** | Vault flag (Custom Pool) that holds all claims until maturity, then releases everything at once. |
+| **Piecewise Schedule** | Standard Pool release curve: cumulative unlock % defined at specific milestone dates. |
+| **Rate Curve** | Custom Pool exchange-rate curve: VT per deposited asset, declining over time from Base Rate to Min Rate. |
+| **Maturity Phase** | Post-`endVesting()` state: oracle-driven releases stop; investors redeem VT 1:1 from `excessT`. |

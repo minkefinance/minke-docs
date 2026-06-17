@@ -1,0 +1,157 @@
+# Create Oracle
+
+Navigate to `/create-oracle` or click **Setup Oracle** from the dashboard.
+
+The wizard has three steps shown in the left sidebar:
+
+1. **Project Info** — token, contacts, distribution mode
+2. **Oracle Setup** — release schedule (Standard Pool) or rate curve (Custom Pool), then deploy on-chain
+3. **Get Approved** — open a GitHub Issue and save the oracle
+
+<Callout type="warning">
+Steps 2 and 3 require a connected wallet. Step 1 is visible to anyone, but the Deploy Oracle and GitHub Issue buttons only activate after wallet connection.
+</Callout>
+
+---
+
+## Step 1 · Project Info
+
+### Asset Information
+
+Fields marked ✓ are **required** — the Continue button remains disabled until all are valid.
+
+| Field | Required | Description |
+|---|---|---|
+| **Project Name** | ✓ | Public display name (e.g. `Acme Finance`). |
+| **Asset Name** | ✓ | Human-readable label for this vesting asset (e.g. `Acme Finance — 90d Farming Reward`). |
+| **DFI Token Address** | ✓ | ERC-20 address of your DFI token. Auto-verified on-chain: shows name, symbol, decimals, and total supply. |
+| **Telegram** | ✓ | Project's Telegram handle or group link (e.g. `@acmefinance`). |
+| **Email** | ✓ | Contact email for the Minke team (e.g. `contact@acme.xyz`). |
+
+<Callout type="tip">
+After pasting the token address, the field auto-queries the connected network. A green ✓ confirms a valid ERC-20. A red error means the address is incorrect or not deployed on the current network.
+</Callout>
+
+### Use Cases (optional)
+
+Select one or more tags: **Token Vesting, Loyalty Program, Farming, DePIN, RWA, Bonding**. Tags appear in the GitHub Issue review and are informational only.
+
+### Distribution Mode
+
+Choose one of two modes — this determines the oracle type and vault behaviour:
+
+**Standard Pool** — Issue Vesting Tokens (VT) directly to investor wallets. A piecewise (percentage-based) release schedule defines how much is unlocked over time. Best for token vesting, airdrops, and lock-up programs.
+
+**Custom Pool** — Investors deposit an asset (ERC-20 token or NFT) to earn VT at an exchange rate that declines over time. Rewards early depositors. Best for farming programs, DePIN, and loyalty schemes.
+
+### Custom Pool — extra fields
+
+When **Custom Pool** is selected, additional fields appear:
+
+| Field | Required | Description |
+|---|---|---|
+| **Deposit Asset Type** | ✓ | ERC-20, ERC-721, or ERC-1155. |
+| **Asset Contract Address** | ✓ | Address of the depositable asset on the connected network. Auto-verified via EIP-165 for NFTs; name & decimals shown for ERC-20. |
+| **ERC-1155 Token ID** | Only for ERC-1155 | The specific token ID that can be deposited (default `0`). |
+
+Click **Continue** once all required fields are valid and the token address is verified on-chain.
+
+---
+
+## Step 2 · Oracle Setup
+
+### Oracle Description *(required)*
+
+Write a plain-language description of what this oracle is for and the specific release plan. Appears in the GitHub Issue review and on the vault page.
+
+> **The Deploy Oracle button is disabled until this field is filled in.**
+
+---
+
+### Oracle Configuration — Standard Pool (Piecewise Release Schedule)
+
+| Field | Required | Description |
+|---|---|---|
+| **Total Token Allocation** | ✓ | Total number of tokens to vest — in whole token units (e.g. `1000000` for 1 M tokens). The oracle stores absolute cumulative amounts scaled from your schedule percentages. |
+| **Release Schedule Editor** | ✓ | Visual interactive editor — see below. |
+
+**Using the Release Schedule Editor:**
+
+- Set **Vesting Start** and **Fully Vested** dates to define the overall schedule window.
+- The live SVG chart preview updates as you edit.
+- Click **Add Milestone** (up to 6 milestones) to add an intermediate unlock breakpoint.
+- Each milestone has a **date** and a **cumulative % unlocked** at that date.
+- Drag the circle handles on the allocation bar to adjust each milestone's percentage.
+- Each segment between milestones can be **Linear** (gradual ramp) or **Step** (instant release at that date). Toggle via the ≈ / ⌐ buttons on the bar, or the Linear/Step button on each row.
+- The **Final segment** mode controls whether the last stretch to 100% is a linear ramp or an instant step.
+
+<Callout type="tip" title="Common schedule shapes">
+- **Cliff then linear:** One Step milestone at the cliff date (e.g. 0% at month 6), then a linear ramp to 100%.
+- **Equal quarterly steps:** Add milestones at 25 / 50 / 75%, each set to Step.
+</Callout>
+
+---
+
+### Oracle Configuration — Custom Pool (Rate Curve)
+
+The rate curve defines a declining VT-per-asset exchange rate, rewarding earlier depositors with more VT per unit deposited.
+
+| Field | Required | Description |
+|---|---|---|
+| **Base Rate** | ✓ | VT earned per asset deposited at the start of the period (the highest rate). Must be > 0. |
+| **Min Rate** | ✓ | VT earned per asset at the end of the period (the floor). Must be ≥ 0 and less than Base Rate. |
+| **Start Date / End Date** | ✓ | Full duration of the rate curve. |
+| **Breakpoints** | — | Optional inflection points (up to 6). Each has a date and a cumulative rate-drop percentage (1–99). Segments can each be Linear or Step. |
+
+An **Issuer Reference — Yield Estimate** panel shows computed values in real time:
+
+| Metric | What it means |
+|---|---|
+| **Simple Yield** | Annual percentage yield assuming uniform linear decay. |
+| **Est. APY** | Continuously compounded equivalent APY. |
+| **Current Rate** | VT per asset at the present moment. |
+| **Deposit-Now Yield** | Simple yield for a deposit made today, based on remaining curve. |
+
+---
+
+### Deploying the Oracle
+
+Click **Deploy Oracle** once the description and schedule/curve are valid. This triggers **two sequential wallet transactions**:
+
+| Transaction | What it does |
+|---|---|
+| **1. Deploy Proxy** | Deploys an EIP-1167 minimal proxy pointing to the DFI Oracle implementation contract. An Etherscan link appears during confirmation. |
+| **2. Initialize Oracle** | Calls `initialize()` on the proxy with your schedule or rate-curve parameters. Stores all timestamps and values on-chain. |
+
+<Callout type="warning">
+Do not navigate away between the two transactions. If initialization fails, click **Retry** to re-attempt without redeploying the proxy.
+</Callout>
+
+When both confirm, the oracle address and all metadata are saved to the Minke server. Click **Continue**.
+
+---
+
+## Step 3 · Get Approved
+
+This step shows a read-only summary of your oracle and opens a pre-filled GitHub Issue for the Minke Finance team to review.
+
+The summary card shows: project name, asset name, DFI token, telegram, email, use case tags, distribution mode (Standard Pool or Custom Pool), oracle contract address, deposit asset (Custom Pool only), and your description.
+
+Click **Open GitHub Issue**. A new browser tab opens with the issue body pre-populated, including all project metadata, the oracle contract address with Etherscan link, and the full release schedule or rate curve parameters as formatted JSON.
+
+Submit the issue on GitHub. The dashboard oracle card updates its status badge:
+
+| Badge | Meaning |
+|---|---|
+| 🟡 **Pending Approval** | GitHub issue opened; awaiting team review. |
+| ⚪ **Not Submitted** | Issue not yet opened. |
+
+<Callout type="info" title="What approval means">
+The Minke Finance team reviews your oracle parameters and release schedule for correctness and compliance before the vault can be deployed. Do not promote the vault address publicly until you receive confirmation.
+</Callout>
+
+Click **Continue to Vault** to proceed, or come back later from the dashboard.
+
+---
+
+**Next:** [Create Vault →](/integration/create-vault)

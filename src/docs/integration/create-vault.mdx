@@ -1,0 +1,95 @@
+# Create Vault
+
+Navigate to `/create-vault`, click **Create Vault** from the dashboard, or click the **Create Vault** button on an approved oracle card to pre-fill the oracle selection.
+
+---
+
+## Step 1 · Select Oracle
+
+Choose the oracle that will govern this vault:
+
+- **Dropdown list** — shows all oracles you have deployed under the connected wallet, with their mode badge (Standard Pool / Custom Pool).
+- **Paste address** — paste any oracle contract address directly. The app fetches metadata from the server and auto-selects it.
+
+An **Oracle Details** panel appears once an oracle is selected:
+
+| Field | Description |
+|---|---|
+| Address | Short-form oracle contract address. |
+| Mode | Standard Pool (PIECEWISE) or Custom Pool (CURVE). |
+| DFI Token | The DFI token address linked to this oracle. |
+| Deposit Asset | *(Custom Pool only)* Depositable asset address and type. |
+| Total Allocation | *(Standard Pool only)* Total tokens to be vested. |
+| GitHub Issue | Green ✓ if submitted, amber warning if pending. |
+
+<Callout type="warning">
+The vault mode is fixed by the oracle you select. You cannot change it on this screen — pick the correct oracle before clicking Continue.
+</Callout>
+
+Click **Continue**.
+
+---
+
+## Step 2 · Launch Vault
+
+### Vault Details *(both modes)*
+
+| Field | Required | Description |
+|---|---|---|
+| **Project Logo** | — | PNG / JPEG / WebP, max 2 MB. Shown on the vault page and in the Explore listing. |
+| **Pool Name** | ✓ | On-chain label for this pool (e.g. `Acme Finance Seed Round`). Stored immutably on-chain. |
+| **VT Token Name** | read-only | Auto-derived: `Vesting <TokenName>`. Stored immutably on-chain. Cannot be changed. |
+| **VT Symbol** | read-only | Auto-derived: `v<SYMBOL>`. Stored immutably on-chain. Cannot be changed. |
+| **Pool Description** | — | Off-chain description shown on the vault page. Pre-filled with the oracle description if one was provided. Editable after deployment. |
+
+### Deposit & Withdraw Windows *(Custom Pool only)*
+
+| Field | Required | Description |
+|---|---|---|
+| **Deposit Window Start** | ✓ | Earliest date/time investors may deposit assets. Must be within the oracle's vesting date range. |
+| **Deposit Window End** | ✓ | Latest date/time new deposits are accepted. |
+
+### Full Cover Mode *(Custom Pool only)*
+
+| | |
+|---|---|
+| **Default** | Off |
+| **Effect** | New investor deposits are blocked once total minted VT would exceed the vault's live T balance (`VT.totalSupply() > balanceOf(vault)`). |
+| **Investor signal** | Displays a **Full Cover** badge on the vault page, signalling stronger issuer commitment. |
+
+<Callout type="tip">
+Enable Full Cover for locked token-sale programs where you can guarantee a sufficient T balance. Leave it off for open-ended staking programs where token supply is dynamic.
+</Callout>
+
+### Lump-Sum Payout Mode *(Custom Pool only)*
+
+| | |
+|---|---|
+| **Default** | Off |
+| **Effect** | Investor claims are paused at vault launch. At maturity, the issuer deposits T, calls End Vesting, then resumes the Redeem Pool to unlock all payouts at once. |
+| **Transaction flow** | Enabling this triggers a **two-transaction flow**: (1) Create Vault, (2) auto-pause Redeem Pool. MetaMask will prompt twice. |
+
+<Callout type="warning">
+Do not close the browser after the first transaction — MetaMask will prompt immediately for the second.
+</Callout>
+
+### Allow Investor Withdrawals *(Custom Pool only)*
+
+Enabling this checkbox allows investors to withdraw their deposited assets. Optionally restrict withdrawals to a date window by filling in Window Start/End dates (leave empty to allow withdrawals at any time). All dates are validated against the oracle range.
+
+### Min VT Floor *(Custom Pool — system-set)*
+
+The vault enforces a minimum exchange of **0.1 VT per deposited unit**. Fixed by the system; not configurable in the UI. Shown in the Full Review panel for reference. Prevents dust deposits where the computed VT award would round down to zero.
+
+### Full Review
+
+A read-only summary card shows all oracle parameters (address, mode, project, allocation) and vault parameters before you commit. Review carefully — **vault deployment is irreversible**.
+
+Click **Launch Vault** and approve the transaction in your wallet.
+
+After the transaction confirms:
+1. Vault and Redeem Pool contract addresses are registered on the Minke metadata server.
+2. Your logo is uploaded to the server if provided.
+3. You are redirected to the vault management page:
+   - Standard Pool vault → `/pool/<vault>` → continue to [Standard Pool](/integration/standard-pool)
+   - Custom Pool vault → `/custom-pool/<vault>` → continue to [Custom Pool](/integration/custom-pool)

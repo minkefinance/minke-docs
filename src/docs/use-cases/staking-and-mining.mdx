@@ -1,6 +1,6 @@
 # Staking and Mining
 
-Proof-of-Stake validators and proof-of-work miners accumulate future rewards that are structurally similar to vesting schedules: deterministic rates, known schedules, and rule-based emissions. Minke tokenises these streams so operators can access their value today.
+Proof-of-Stake validators and proof-of-work miners accumulate future rewards that are structurally similar to vesting schedules: deterministic rates, known schedules, rule-based emissions. Minke tokenises these streams so operators can access their value today.
 
 ## Staking Rewards as DFI
 
@@ -31,8 +31,9 @@ A validator pool operator has 1,000 ETH staked and expects 40 ETH in rewards ove
 
 ```
 ── OPERATOR (originator) ──────────────────────────────────────
-Setup:  Creates Tranche (12-month linear)
-        Stakes allocation NFT → Vault mints 40 ETH-VT (1:1)
+Setup:  Creates Standard Pool (12-month linear)
+        Deposits 40 ETH into vault
+        Calls mintVT(operator, 40 ETH-VT) → operator holds 40 ETH-VT
 
 Goal:   Get liquidity today
 Action: Sells 40 ETH-VT on AMM at 0.93 ETH per VT
@@ -47,7 +48,7 @@ Option A: Stake in RedeemPool
           → e.g. ~3.33 ETH/month × 0.99 = ~3.30 ETH/month (after e.g. 1% fee)
           → Total ~39.6 ETH over 12 months (vs 37.2 ETH paid)
 
-Option B: Hold to Phase 2
+Option B: Hold to Maturity
           → vestingEnded = true at Month 12
           → redeemVT(40 VT) → 40 ETH (1:1, no fee)
           → Earns the full 2.8 ETH discount as profit
@@ -60,8 +61,8 @@ Option B: Hold to Phase 2
 | **No unstaking required** | The validator position remains fully intact |
 | **Operational capital** | Fund hardware purchases against future rewards |
 | **Portfolio diversification** | Convert ETH yield exposure into stablecoins or other assets |
-| **No lock-up broken** | The underlying rewards still arrive per schedule in the Vault |
+| **No lock-up broken** | The underlying rewards still arrive per schedule in the vault |
 
 <Callout type="warning" title="Variable staking rewards">
-Staking rewards that depend on utilisation rates, validator count changes, or protocol governance decisions are VFI — they are better suited for Minke Phase 2 (Yield Token). Only use Phase 1 VT for staking positions with deterministic, pre-committed schedules.
+Staking rewards that depend on utilisation rates, validator count changes, or protocol governance decisions are VFI — they are better suited for Minke Phase 2 (Yield Token). Only use VT for staking positions with deterministic, pre-committed schedules.
 </Callout>

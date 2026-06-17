@@ -15,7 +15,7 @@ The naive solution — sell native tokens on the open market — creates immedia
 
 ## How Minke Helps
 
-The treasury mints VTs against its vesting allocation and **sells them** to secondary buyers. The treasury gets stablecoin liquidity today. VT buyers get discounted access to the protocol's future token stream.
+The treasury deploys a Standard Pool, deposits its vesting allocation, and mints VTs to secondary buyers. The treasury gets stablecoin liquidity today. VT buyers get discounted access to the protocol's future token stream.
 
 This is not a loan. There is no repayment obligation. The treasury has simply monetised a portion of its future vesting schedule.
 
@@ -23,18 +23,17 @@ This is not a loan. There is no repayment obligation. The treasury has simply mo
 Minke's interaction requires a standard multisig transaction. Any DAO using Gnosis Safe, Llama, or similar tooling can interact with Minke contracts without custom integrations.
 </Callout>
 
-
 ## Vesting VTs to Contributors
 
 Minke-native vesting is a powerful alternative to traditional token grants:
 
 Instead of granting contributors raw tokens with a cliff + linear lock, protocols can:
 
-1. Create a Minke tranche with the contributor's allocation
-2. Grant the contributor VTs directly at day one
+1. Create a Minke Standard Pool with the contributor's allocation
+2. Grant the contributor VTs directly at day one via `mintVT`
 3. The contributor holds liquid, tradable tokens from grant day — no waiting for cliff
 
-The underlying tokens still vest per the original schedule. Contributors who want early liquidity can sell VTs at a discount; those who believe in the protocol hold to Phase 2 and redeem at par.
+The underlying tokens still vest per the original schedule. Contributors who want early liquidity can sell VTs at a discount; those who believe in the protocol hold to Maturity and redeem at par.
 
 ## Treasury Risk Management
 
@@ -47,10 +46,10 @@ The underlying tokens still vest per the original schedule. Contributors who wan
 
 ## Protocol Integration
 
-The Minke team works directly with DAO treasuries to structure appropriate tranches. Considerations include:
+The Minke team works directly with DAO treasuries to structure appropriate pools. Considerations include:
 
-- **Tranche size** — typically 10–20% of total unvested treasury per tranche
-- **Schedule** — match Minke tranche to the treasury's actual vesting schedule
+- **Pool size** — typically 10–20% of total unvested treasury per pool
+- **Schedule** — match Minke pool to the treasury's actual vesting schedule
 - **Governance approval** — propose via DAO forum and execute via multisig
 
 <Callout type="tip">

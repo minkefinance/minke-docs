@@ -1,22 +1,22 @@
 # Design Principles
 
-Minke's architecture is shaped by four non-negotiable design principles. These principles were chosen to maximise safety and composability while minimising trust assumptions.
+Minke's architecture is shaped by three non-negotiable design principles. These principles were chosen to maximise safety and composability while minimising trust assumptions.
 
 ## 1. No Counterparty Risk
 
 When you deposit into Minke, you are not trusting a third party — you are executing a mathematical contract.
 
 - **Non-custodial**: the protocol never holds assets on your behalf in any discretionary sense. Deposited tokens are locked in a verified smart contract, not managed by a multisig or off-chain custodian.
-- **No admin withdrawal**: after tranche creation, no address (including the Minke team) can withdraw deposited funds. The contract is the custodian.
+- **No admin withdrawal**: after pool creation, no address (including the Minke team) can withdraw deposited funds. The contract is the custodian.
 - **Immutable schedules**: vesting schedules cannot be changed post-deployment. The depositor and all VT holders can verify the exact redemption timeline by reading the contract.
 
-Compared to OTC vesting desks, they hold your position off-chain, require KYC, can be dissolved, and extract 15–40% in spreads. Minke replaces all of this with code.
+Compare to OTC vesting desks: they hold your position off-chain, require KYC, can be dissolved, and extract 15–40% in spreads. Minke replaces all of this with code.
 
 ## 2. Permissionless and Inclusive
 
 There is no whitelist. Anyone can:
 
-- Create a Suite and Tranche for any ERC-20 token
+- Create a Standard or Custom Pool for any ERC-20 token
 - Issue VTs to any address
 - List VTs on any AMM without permission
 

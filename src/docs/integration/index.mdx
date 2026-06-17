@@ -1,23 +1,47 @@
 # Integration Guide
 
-<ComingSoon feature="Integration Guide" />
+> **Audience:** Project issuers deploying a vesting program on Minke Finance.
+> **Time:** ~15 minutes end-to-end (plus approval wait).
 
-## What Will Be Here
+---
 
-When Minke launches on mainnet, this section will provide complete integration documentation for:
+## Overview
 
-- **Protocols** — how to set up a Suite, create tranches, and manage vesting schedules through the Minke protocol
-- **Frontends** — SDK and API reference for building on top of Minke
-- **Indexers** — event schemas and subgraph references for indexing Minke activity
+Minke Finance supports two pool types. Both follow the **same two-stage creation flow** — Create Oracle, then Create Vault. The difference is in how the oracle is configured.
 
-## Planned Sections
+| Pool Type | Best For | Oracle Config |
+|---|---|---|
+| **Standard Pool** | Token vesting, airdrops, lock-up programs — issuer mints VT directly to investors | Piecewise release schedule (LINEAR / PIECEWISE) |
+| **Custom Pool** | Farming, DePIN, loyalty — investors deposit an asset to earn VT at a declining rate | Rate-decay curve (CURVE) |
+
+Both pool types share the same **DFI Oracle**, **VT Token**, and **Redeem Pool** architecture. The issuer deposits DFI tokens T, approves the Redeem Pool, and investors claim T by staking VT.
+
+## Workflow at a Glance
+
+```
+Connect Wallet
+  → Getting Started: Create Oracle (3 steps) — configure & deploy on-chain, submit GitHub Issue
+  → [Wait for Minke team approval]
+  → Getting Started: Create Vault (2 steps) — select oracle, launch vault
+  → Standard Pool: deposit T, approve pool, mint VT to investors
+  → Custom Pool:   deposit T, approve pool, let investors deposit
+```
+
+<Callout type="warning" title="5% Protocol Fee">
+All investor claims are subject to a fixed 5% protocol fee. Investors receive 95% of their entitled tokens on each claim.
+</Callout>
+
+## Prerequisites
+
+- A wallet connected to the **target EVM network** (MetaMask or any WalletConnect-compatible wallet).
+- Your **DFI token (ERC-20) address** — the token you will vest.
+- For **Custom Pool** only: the address of the deposit asset (ERC-20, ERC-721, or ERC-1155) on the same network.
+
+## Sections
 
 | Section | Description |
 |---|---|
-| Getting Started | First integration walkthrough, deploying a test tranche |
-| SDK Reference | `@minke-finance/sdk` API documentation |
-| Contract Addresses | Mainnet and testnet deployment addresses |
-
-## Early Access
-
-If you are building a protocol or application that wants to integrate Minke before public documentation is available, reach out to the team.
+| [Getting Started](/integration/getting-started) | Shared creation flow — Create Oracle (Parts 1–2) and Create Vault (Part 3) |
+| [Standard Pool](/integration/standard-pool) | Standard Pool management — deposit T, mint VT, monitor, end vesting |
+| [Custom Pool](/integration/custom-pool) | Custom Pool management — deposit T, manage windows, monitor, end vesting |
+| [Glossary](/integration/glossary) | Key terms and contract concepts |

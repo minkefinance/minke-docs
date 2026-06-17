@@ -2,64 +2,82 @@
 
 Minke converts illiquid future-income positions into tradable tokens. No oracles. No counterparty. No haircuts.
 
-## The Flow
+## Two Pool Modes
+
+Minke supports two pool modes. Both follow the same creation path — **Create Oracle → Create Vault** — with the mode selected when you configure the oracle. The difference is in how VT reaches investors.
+
+| Mode | Who mints VT | Oracle type | Best for |
+|---|---|---|---|
+| **Standard Pool** | Issuer mints VT directly to each investor | PIECEWISE release schedule | Token vesting, airdrops, lock-up programs |
+| **Custom Pool** | Investors deposit an asset to receive VT at a declining rate | CURVE (rate decay) | Farming, DePIN rewards, loyalty programs |
+
+Both modes share the same VT Token, RedeemPool, and Maturity redemption mechanics.
+
+---
+
+## Creation Flow (both modes)
 
 ```
-1. SETUP      — A project creates a Vesting Suite--a Vault and ERC1155NFT contract
-2. MINT VT    — Recipient stakes NFT → Vault mints VT into their wallet
-3. TRADE/HOLD — Holder sells VTs on AMM, stakes in RedeemPool, or holds to maturity
-4. REDEEM     — VT holder redeems at maturity 1:1 via redeemVT()
+1. CREATE ORACLE  — Issuer configures a DFI Oracle (schedule or rate curve), deploys on-chain
+2. GET APPROVED   — Minke team reviews oracle via GitHub Issue
+3. CREATE VAULT   — Issuer selects the approved oracle and deploys the vault
+4. FUND           — Issuer deposits DFI tokens (T) into the vault
+5. APPROVE POOL   — Issuer grants Redeem Pool permission to pull T
 ```
 
-Each step is a permissionless on-chain action. There is no centralized intermediary at any step.
+After setup, the two modes diverge in how VT is distributed:
 
-## Step 1: Project Setup
+| Mode | Step 6 |
+|---|---|
+| **Standard Pool** | Issuer calls `mintVT(to, amount)` for each investor |
+| **Custom Pool** | Investors call `deposit(amount)` → receive VT at the current oracle rate |
 
-A project creates a **Vesting Suite** via `VestingFactory` — this deploys a `Vault` and `ERC1155NFT` contract. The project owner then:
-- Deposits the underlying tokens (T) into the Vault
-- Creates tranches (each with its own `VTToken` and `RedeemPool`)
-- Mints ERC-1155 NFTs representing each recipient's vesting allocation and distributes them
+---
 
-## Step 2: Mint VT
+## Investor Journey (both modes)
 
-Recipients stake their ERC-1155 allocation NFTs into the Vault:
+Once VT is in investor wallets, the experience is identical across both modes:
+
+### Option A — Stake in RedeemPool
 
 ```solidity
-function stakeNFT(uint256 trancheId, uint256 amount) external;
+function stakeVT(uint256 amount) external;
+function claimT() external;
+function unstakeVT(uint256 shares) external;
 ```
 
-The Vault mints VT to the recipient at the tranche's fixed rate (`vtPerNft`). VTs are standard ERC-20 tokens — transferable, listable, composable.
+The RedeemPool lazily pulls T from the vault per the DFIOracle schedule, burns VT 1:1 as T arrives, and distributes T proportionally — minus the protocol fee (5%). Investors call `claimT()` to receive their accumulated T.
 
-## Step 3: Trade, Stake, or Hold
+### Option B — Trade on AMM
 
-VT holders have three options:
+VTs are standard ERC-20 tokens. Holders can sell on any DEX at a market discount. Secondary buyers make a time-value bet: they acquire future claims cheaply and either stake for gradual T or redeem at par at maturity.
 
-| Action | Mechanism | Outcome |
-|---|---|---|
-| **Sell** | List VT on any AMM at a discount | Immediate liquidity |
-| **Stake** | Stake VT in the RedeemPool | Receive T gradually as it vests (e.g., 5% fee) |
-| **Hold** | Keep VTs until maturity | Redeem at par 1:1 in Phase 2 |
+### Option C — Wait for Maturity
 
-### Staking in the RedeemPool
-
-When a VT holder stakes in the RedeemPool, the pool automatically pulls T from the Vault per the release schedule, burns VT 1:1 as T arrives, and distributes T to stakers proportionally minus the protocol fee (e.g. 5%). The holder calls `claimT()` to receive their accumulated T.
-
-VT buyers on secondary markets make a time-value-of-money bet: they acquire future claims at a discount and either stake for gradual T receipt or redeem at par at maturity.
-
-## Step 4: Phase 2 Redemption
-
-Once the vesting schedule completes, `vestingEnded` is set to `true` on the RedeemPool. Any VT holder can call:
+Once the vesting schedule ends, `vestingEnded` is set on the RedeemPool. Any VT holder can call:
 
 ```solidity
 function redeemVT(uint256 vtAmount) external;
 ```
 
-This burns `vtAmount` VT 1:1 from the RedeemPool's `excessT` reserve and transfers T to the caller. No protocol fee applies to Phase 2 redemption.
+Burns `vtAmount` VT 1:1 from the pool's `excessT` reserve and transfers T to the caller. No protocol fee.
 
 ```
 redeemed = 1 underlying per VT  (always exactly 1:1)
 ```
 
+---
+
+## Shared Mechanics
+
+| Concept | Detail |
+|---|---|
+| **VT** | ERC-20, transferable, tradable on any DEX |
+| **DFI Oracle** | Stores the release schedule or rate curve on-chain as an EIP-1167 clone |
+| **RedeemPool** | Lazy pull from vault per DFIOracle; proportional T distribution |
+| **Protocol fee** | Fixed 5% deducted from vesting distributions only |
+| **Maturity** | `redeemVT(vtAmount)` — 1:1 T from `excessT` reserve, no fee |
+
 <Callout type="tip" title="No oracles, no liquidations">
-At no point does Minke consult an external price feed. The 1:1 backing guarantee is mathematical — not economic — making the system immune to oracle manipulation and collateral cascades.
+The DFI Oracle stores the vesting schedule or rate curve on-chain — no external price feed is ever consulted. The 1:1 backing guarantee is mathematical, making the system immune to oracle manipulation and collateral cascades.
 </Callout>

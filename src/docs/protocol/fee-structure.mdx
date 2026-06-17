@@ -1,6 +1,6 @@
 # Fee Structure
 
-Minke charges a protocol fee when VT holders stake in the RedeemPool and receive the underlying token (T) as it vests. There is no upfront deposit fee and no fee on Phase 2 redemption.
+Minke charges a protocol fee when VT holders stake in the RedeemPool and receive the underlying token (T) as it vests. There is no upfront deposit fee and no fee on redemption at maturity.
 
 ## When the Fee Applies
 
@@ -8,30 +8,31 @@ The protocol fee (e.g., 5%) is deducted at the moment the RedeemPool distributes
 
 ```
 RedeemPool pulls 100 T from Vault
-  → 95 T distributed to stakers (e.g., 95% → userRewardRate = 950/1000)
-  →  5 T → protocol treasury   (e.g., 5% fee)
+  → 95 T distributed to stakers (e.g., protocolFeeRate = 50/1000 = 5%)
+  →  5 T → protocol treasury
 ```
 
 Each staker receives their proportional share of the 95 T, based on their share of the pool at the time of the pull.
 
 ## What the Fee Is NOT
 
-- **Not an upfront deposit fee** — depositing T into the Vault has no fee
-- **Not a VT minting fee** — staking an NFT to mint VT has no fee
-- **Not a Phase 2 redemption fee** — `redeemVT()` at maturity is always 1:1 with no fee
-
+- **Not an upfront deposit fee** — depositing T into the vault has no fee
+- **Not a VT minting fee** — minting VT has no fee
+- **Not a Maturity redemption fee** — `redeemVT()` at maturity is always 1:1 with no fee
 
 ## Fee Rate
 
-The fee rate is set at tranche deployment via `userRewardRate` (in basis points out of 1000):
+The fee rate is stored as `protocolFeeRate` in basis points out of 1000:
 
 ```
-userRewardRate = 950  →  95% to stakers, 5% to protocol
-userRewardRate = 900  →  90% to stakers, 10% to protocol
+protocolFeeRate = 50   →  5% fee  →  95% to stakers
+protocolFeeRate = 100  →  10% fee →  90% to stakers
 ```
 
-The rate is immutable after deployment. No admin function exists to change it on an existing tranche. Users can verify the rate by reading `userRewardRate` on the deployed RedeemPool contract.
+The default rate is **50 (5%)**. The Protocol Owner can update the rate on a per-pool basis, up to a maximum of **200 (20%)**.
+
+Users can verify the current rate by reading `protocolFeeRate` on the deployed RedeemPool contract.
 
 <Callout type="note">
-Future protocol versions may introduce governance-controlled fee tiers. Any changes would apply to new tranches only — existing tranches are immutable.
+The protocol fee rate is configurable by the Protocol Owner, up to a maximum of 20%. Any updates apply going forward — already-distributed T is not affected.
 </Callout>

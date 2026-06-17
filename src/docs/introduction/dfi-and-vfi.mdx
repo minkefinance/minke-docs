@@ -1,6 +1,6 @@
 # DFI and VFI
 
-Minke introduces a formal classification framework for on-chain future income: **Deterministic Future Income (DFI)** and **Variable Future Income (VFI)**. 
+Minke introduces a formal classification framework for on-chain future income: **Deterministic Future Income (DFI)** and **Variable Future Income (VFI)**. This distinction shapes which protocol primitives apply to each asset class.
 
 ## Deterministic Future Income (DFI)
 
@@ -45,6 +45,24 @@ VFI is any on-chain income stream where the **amount** is unknown at origination
 | Restaking operator rewards | Depends on AVS fees and slashing |
 | Liquid staking derivatives | ETH staking APR shifts with validator set |
 | Farming / incentive emissions | Subject to governance changes |
+
+## Why the Distinction Matters
+
+The DFI/VFI classification is not just taxonomic — it determines the correct pricing model and risk structure for each protocol primitive.
+
+```
+DFI → fixed schedule → no oracle needed → VT
+VFI → variable yield → needs rate model → YT
+```
+
+By separating these two categories, Minke can build purpose-fit primitives rather than one-size-fits-all wrappers:
+
+- **VT** achieves oracle-free pricing because the underlying cash flow is deterministic
+- **YT** strips yield for speculation or hedging — useful for DAOs managing APY exposure without exiting their core positions
+
+<Callout type="tip" title="Design implication">
+The DFI model was specifically chosen for Phase 1 because it eliminates the need for any oracle dependency. This means Minke can launch without any price feed and without any liquidation mechanism.
+</Callout>
 
 ## Classification in Practice
 

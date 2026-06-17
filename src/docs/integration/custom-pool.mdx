@@ -1,0 +1,107 @@
+# Custom Pool Management
+
+URL: `/custom-pool/<vault>`
+Accessible to: the connected wallet that deployed the vault (owner-only actions gated on-chain).
+
+For pool creation, see [Getting Started](/integration/getting-started).
+
+---
+
+## Stats Overview
+
+| Stat | Description |
+|---|---|
+| **T Deposited** | Total project-token deposited by the issuer into the vault. |
+| **Vault T Balance** | Live project-token balance currently in the vault. |
+| **T Debt** | Outstanding T owed to investors: `totalVTMinted − VT burned` (un-redeemed entitlement). |
+| **VT Issued** | Total VT minted to investors (all time). |
+| **Total T Released** | Cumulative T distributed by the Redeem Pool. |
+| **VT Burned** | Cumulative VT destroyed through investor claims. |
+| **Deposit Window** | Open/close times for investor deposits. |
+| **Allow Withdraw** | Whether investor asset withdrawals are enabled. |
+| **Paused** | Whether the Redeem Pool is currently paused. |
+| **T Claimable** | Live `tClaimable()` — total T available for release based on current rate and deposits. |
+
+**Full Cover T-backing bar** *(if Full Cover is enabled)*: A progress bar shows minted VT vs remaining capacity. Turns amber at ≥ 90% full, red when exhausted.
+
+A **rate-decay chart** renders the curve from oracle data with a "now" marker.
+
+---
+
+## DFI Tokens (T) Section
+
+### Deposit T into Vault
+
+1. Enter the amount of T to deposit (whole tokens). Your wallet T balance is shown for reference.
+2. Click **Approve → Deposit**: approves the vault, then calls `depositProjectTokens(amount)`. MetaMask prompts twice.
+
+<Callout type="info">
+Deposit T before approving the Redeem Pool. Investors can deposit assets and earn VT at any time after the vault is live, but they can only claim T once T is in the vault and the pool is approved.
+</Callout>
+
+### Withdraw T from Vault
+
+Recover unused T from the vault back to your wallet.
+
+1. Enter the amount to withdraw (whole tokens). The vault's current T balance is shown.
+2. Click **Withdraw T** and confirm.
+
+<Callout type="warning" title="Full Cover guard">
+If Full Cover is enabled, this call will revert with `WouldBreakFullCover` if the withdrawal would leave `balanceOf(vault) < VT.totalSupply()`. Ensure investors have fully redeemed or burned their VT before withdrawing.
+</Callout>
+
+### Approve Redeem Pool
+
+Same as Standard Pool — choose **Unlimited ∞** or a **Custom amount** and confirm. The pool must be approved before any investor can claim T.
+
+---
+
+## Access Windows Section *(owner only)*
+
+Manage the deposit and withdraw windows after deployment.
+
+| Action | Effect |
+|---|---|
+| **Update Deposit Window** | Change the start/end timestamps for investor deposits. Set End to a past time to immediately close deposits. |
+| **Update Withdraw Window** | Change the start/end timestamps for investor asset withdrawals (only relevant if Allow Withdraw is enabled). |
+
+Both date inputs are validated against the oracle's vesting range. Enter new start/end dates and click **Update** — one wallet transaction each.
+
+<Callout type="tip">
+To permanently close deposits before the oracle end date, set the Deposit Window End to a timestamp in the past. This is step 1 of the Enter Maturity flow.
+</Callout>
+
+---
+
+## Investor Activity Section *(owner only)*
+
+### Pause / Resume Investor Claims
+
+Locally pause or unpause the Redeem Pool. Pausing halts all investor `claimT` and `unstakeVT` calls without affecting the vault state.
+
+Click **Pause Pool** or **Resume Pool** and confirm. The section header icon turns amber when paused.
+
+### Manual Release
+
+Trigger a manual `tryPullFromVault` cycle — forces the Redeem Pool to pull any newly available T from the vault and distribute it to stakers. Useful after a large T deposit or to force an update between investor actions.
+
+Click **Trigger Release** and confirm.
+
+---
+
+## Enter Maturity Section
+
+End Vesting for Custom Pool is a **multi-step process** to safely wind down the pool:
+
+| Step | Action | Description |
+|---|---|---|
+| **1** | Close Deposit Window | Sets deposit window to `[0, 1]` — no new investor deposits accepted. |
+| **2** | Close Withdraw Window | Sets withdraw window to `[0, 1]` — prevents new withdrawals during wind-down. |
+| **3** | End Vesting on Redeem Pool | Calls `endVesting()` — moves the pool to maturity phase; investors can now `redeemVT`. |
+| **4** *(Lump-Sum only)* | Resume Investor Claims | Calls `unpause()` — if the pool was paused at launch (Lump-Sum Mode), this step unlocks all claims at once. |
+
+Each step is one wallet transaction. The UI prevents advancing to the next step until the previous transaction confirms.
+
+<Callout type="warning">
+Steps 1–3 are irreversible. Once `endVesting()` is called, no further oracle-driven T releases occur. Complete all T deposits before starting this process.
+</Callout>

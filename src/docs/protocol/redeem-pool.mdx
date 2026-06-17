@@ -1,13 +1,13 @@
 # RedeemPool
 
-The RedeemPool is the core mechanism through which VT holders receive underlying tokens (T) during Phase 1. Users stake VT in the pool; the pool automatically pulls T from the Vault per the vesting release schedule, burns VT 1:1 as T arrives, and distributes T to stakers proportionally — minus a protocol fee (e.g., 5%).
+The RedeemPool is the core mechanism through which VT holders receive underlying tokens (T) during the vesting period. Users stake VT in the pool; the pool automatically pulls T from the vault per the DFIOracle schedule, burns VT 1:1 as T arrives, and distributes T to stakers proportionally — minus a protocol fee (e.g., 5%).
 
 ## How It Works
 
 ```
 User stakes VT → receives shares
                       ↓
-   BP pulls T from Vault per the release schedule
+   Pool pulls T from Vault per DFIOracle schedule
                       ↓
    For every T pulled: 1 VT is burned 1:1
                       ↓
@@ -17,23 +17,21 @@ User stakes VT → receives shares
    User calls claimT() → receives their T
 ```
 
-The RedeemPool does not hold a pre-funded reserve of T. Liquidity grows gradually as the vesting schedule releases tokens from the Vault.
+The RedeemPool does not hold a pre-funded reserve of T. Liquidity grows gradually as the DFIOracle schedule releases tokens from the vault.
 
 ## Numeric Example
 
-From the contract comments (5% fee, userRewardRate = 950):
+From the contract (5% fee, protocolFeeRate = 50):
 
 ```
 TotalStakedVT = 50, user holds 5 VT → 5 shares
 
-Vault releases 10 T → BP pulls 10 T
+Vault releases 10 T → Pool pulls 10 T
 → Burns 10 VT (pool shrinks: 40 VT remaining, 50 shares)
 → Share value drops: 40/50 = 0.8 VT per share
 
 User's claimable T += 10 × (5/50) × 0.95 = 0.95 T
                         (proportional) (after fee)
-
-The user will continue to wait for the subsequent allocation
 ```
 
 The 5% fee (e.g., 0.05 T here) accrues to the protocol treasury. Users receive 95%.
@@ -46,12 +44,12 @@ The 5% fee (e.g., 0.05 T here) accrues to the protocol treasury. Users receive 9
 function stakeVT(uint256 amount) external;
 ```
 
-Deposits `amount` VT into the pool. Shares are issued at the current share-to-VT ratio. A lazy pull from the Vault is triggered first to ensure staking starts with up-to-date rewards accounted for.
+Deposits `amount` VT into the pool. Shares are issued at the current share-to-VT ratio. A lazy pull from the vault is triggered first to ensure staking starts with up-to-date rewards accounted for.
 
-### Withdraw VT
+### Unstake VT
 
 ```solidity
-function withdrawVT(uint256 shares) external;
+function unstakeVT(uint256 shares) external;
 ```
 
 Returns the VT equivalent of `shares` to the caller. Note: the parameter is **shares**, not VT amount — share value declines over time as VT is burned during pulls.
@@ -62,34 +60,31 @@ Returns the VT equivalent of `shares` to the caller. Note: the parameter is **sh
 function claimT() external;
 ```
 
-Triggers a Vault pull first, then transfers all accumulated claimable T to the caller. The fee (e.g., 5%) has already been deducted from the accumulated amount at distribution time.
+Triggers a vault pull first, then transfers all accumulated claimable T to the caller. The fee (e.g., 5%) has already been deducted from the accumulated amount at distribution time.
 
-## Release Schedule
+## Lazy Pull Mechanism
 
-The Vault must explicitly approve the RedeemPool to pull T (`approvePool` or `unlimitedApprovePool`). The pull behaviour is controlled by three parameters set at tranche creation:
+The RedeemPool does not run on a cron schedule. Instead, `_tryPullFromVault` is triggered automatically whenever a user calls `stakeVT`, `unstakeVT`, or `claimT`. This pull queries the DFIOracle for how much T is currently releasable, pulls that amount from the vault, burns the corresponding VT, and updates staker balances.
 
-| Parameter | Description |
-|---|---|
-| `releaseStartTime` | Earliest timestamp pulls can occur (cliff end) |
-| `releaseInterval` | Minimum seconds between pulls (0 = unlimited) |
-| `releaseBatchSize` | Max T per pull (0 = pull all available) |
-
-Pulls are lazy: they happen automatically when a user calls `stakeVT` or `claimT`, not on a cron schedule.
+This design means:
+- No keeper or bot is required
+- Gas costs are distributed across user interactions
+- The pool always syncs to the latest oracle state before any state change
 
 ## Price Floor Effect
 
 Because staking in the RedeemPool guarantees receiving (1 − fee) of the underlying over time, it creates a soft floor for VT market prices. VTs trading below `(1 − fee)` on an AMM represent an arbitrage: a buyer could purchase cheap VTs and stake them to recover, e.g., 95% of par.
 
 ```
-Soft price floor ≈ (1 − protocol_fee_rate)
-e.g., 0.95 underlying per VT
+Soft price floor ≈ (1 − protocolFeeRate / 1000)
+e.g., 0.95 underlying per VT  (at 5% fee)
 ```
 
 ## Dust Protection
 
-The pool enforces a minimum residual VT (`dustProtection`, default 1e18) that cannot be burned. This prevents the pool from reaching a degenerate state with zero VT. Any T that arrives when no further VT can be burned accumulates as `excessT` and becomes available for Phase 2 `redeemVT()`.
+The pool enforces a minimum residual VT (`dustProtection`, default 1e18) that cannot be burned. This prevents the pool from reaching a degenerate state with zero VT. Any T that arrives when no further VT can be burned accumulates as `excessT` and becomes available for Maturity `redeemVT()`.
 
-## Phase 2: redeemVT
+## Maturity: redeemVT
 
 After the vesting schedule ends, `vestingEnded` is set to `true` and staking is disabled. VT holders can then call:
 
@@ -97,8 +92,8 @@ After the vesting schedule ends, `vestingEnded` is set to `true` and staking is 
 function redeemVT(uint256 vtAmount) external;
 ```
 
-This burns VT 1:1 from the `excessT` reserve. No protocol fee applies to Phase 2 redemption.
+This burns VT 1:1 from the `excessT` reserve. No protocol fee applies to Maturity redemption.
 
 <Callout type="info">
-Phase 2 redemption via `redeemVT()` is always 1:1 and fee-free. It covers VT that was never staked, or residual VT left after all Phase 1 pulls.
+Maturity redemption via `redeemVT()` is always 1:1 and fee-free. It covers VT that was never staked, or residual VT left after all vesting period pulls.
 </Callout>

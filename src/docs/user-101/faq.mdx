@@ -9,7 +9,7 @@ Minke Finance is a protocol that converts illiquid vesting positions and future-
 Audit reports will be published before mainnet launch.
 
 **Who controls the protocol?**
-Minke's deployed contracts are immutable — no admin can modify terms post-deploy. Fee rates, vesting schedules, and release parameters are locked at tranche creation.
+Minke's deployed pool contracts are non-custodial — no one can withdraw user funds post-deploy. The Protocol Owner can update the protocol fee rate (up to 20%) on the RedeemPool, but has no access to funds.
 
 **Is there a Minke token?**
 There is no MINKE governance token at launch.
@@ -23,30 +23,33 @@ No minimum at the protocol level. The Minke app may suggest a minimum for gas ef
 ## Protocol Mechanics
 
 **What is a VT?**
-A Vesting Token — a fungible ERC-20 minted when a recipient stakes their allocation NFT in the Vault. VTs represent a 1:1 claim on the underlying token at vesting maturity. See [Vesting Token (VT)](/protocol/vesting-token).
+A Vesting Token — a fungible ERC-20 representing a 1:1 claim on the underlying token at vesting maturity. In a Standard Pool, the issuer mints VT directly to investors. In a Custom Pool, investors deposit assets to receive VT. See [Vesting Token (VT)](/protocol/vesting-token).
 
 **What happens to my tokens after I deposit?**
-They are held in a non-custodial smart contract (the Vault). Neither Minke nor any third party can withdraw them. Only the vesting schedule governs their release.
+They are held in a non-custodial smart contract (the vault). Neither Minke nor any third party can withdraw them. Only the vesting schedule governs their release.
 
 **Can I get my tokens back before maturity?**
 You can sell your VTs on an AMM at a market discount, or stake VTs in the RedeemPool to receive the underlying gradually as it vests (with a protocol fee). Direct early withdrawal is not possible — this is by design.
 
 **What is the protocol fee?**
-A fee (e.g., 1–5%) is deducted from distributions to RedeemPool stakers. It is only charged when you stake VT in the RedeemPool and receive the underlying token. There is no fee at deposit, at VT minting, or at Phase 2 redemption. See [Fee Structure](/protocol/fee-structure).
+A fee (default 5%) is deducted from distributions to RedeemPool stakers. It is only charged when you stake VT in the RedeemPool and receive the underlying token. There is no fee at VT minting or at Maturity redemption. See [Fee Structure](/protocol/fee-structure).
+
+**Why does Minke not need an oracle?**
+DFI vesting schedules are deterministic — the DFIOracle contract stores the exact release curve on-chain; no external price feed is consulted. See [Design Principles](/protocol/design-principles).
 
 **Can I lose money using Minke?**
-If you sell VTs at a discount before maturity, you receive less than par. If you stake in the RedeemPool, you pay the protocol fee. If you hold VTs to Phase 2, you receive the underlying 1:1 with no fee. The main risks are smart contract risk (bugs) and underlying token price risk.
+If you sell VTs at a discount before maturity, you receive less than par. If you stake in the RedeemPool, you pay the protocol fee. If you hold VTs to Maturity, you receive the underlying 1:1 with no fee. The main risks are smart contract risk (bugs) and underlying token price risk.
 
 ## RedeemPool
 
 **What is the RedeemPool?**
-A staking pool is deployed alongside each tranche. VT holders stake their VTs here; the pool automatically pulls the underlying token from the Vault per the vesting release schedule, burns VT 1:1 as T arrives, and distributes T to stakers proportionally (minus a small protocol fee). See [RedeemPool](/protocol/redeem-pool).
+A staking pool deployed alongside each pool. VT holders stake their VTs here; the pool automatically pulls the underlying token from the vault per the vesting release schedule, burns VT 1:1 as T arrives, and distributes T to stakers proportionally (minus a small protocol fee). See [RedeemPool](/protocol/redeem-pool).
 
 **How is T released into the RedeemPool?**
-The Vault releases T to the RedeemPool per a pre-set schedule (configurable cliff, interval, and batch size). Releases are not instant — liquidity in the pool grows as the schedule progresses.
+The vault releases T to the RedeemPool per the DFIOracle schedule (configurable cliff, linear ramp, or piecewise milestones). Releases are not instant — liquidity in the pool grows as the schedule progresses. The pool pulls T lazily whenever a user calls `stakeVT`, `unstakeVT`, or `claimT`.
 
 **What happens if I stake in the RedeemPool early?**
-You start accumulating T as soon as the first vault release occurs after your stake (subject to the `releaseStartTime` cliff). Staking before the cliff has no downside — you simply accumulate nothing until the release window opens.
+You start accumulating T as soon as the first vault release occurs after your stake. Staking before the release window has no downside — you simply accumulate nothing until the release window opens.
 
 ## Trading VTs
 
@@ -57,7 +60,7 @@ VTs are standard ERC-20 tokens tradable on any DEX. Minke will maintain official
 Yes, fully. There are no transfer restrictions on VTs.
 
 **What determines the VT price?**
-Market supply and demand, anchored by the 1:1 Phase 2 redemption guarantee. VTs typically trade at a discount to par that reflects time value and risk, with the RedeemPool staking yield creating a soft price floor.
+Market supply and demand, anchored by the 1:1 Maturity redemption guarantee. VTs typically trade at a discount to par that reflects time value and risk, with the RedeemPool staking yield creating a soft price floor.
 
 <Callout type="info">
 More FAQs will be added regularly. For unanswered questions, reach out on Discord.

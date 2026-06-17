@@ -1,71 +1,52 @@
 # Vesting Token (VT)
 
-A Vesting Token (VT) is a fungible ERC-20 that represents a claim on the underlying project token (T) tied to a specific vesting tranche. VTs are minted when recipients stake their ERC-1155 allocation NFTs in the Vault.
+A Vesting Token (VT) is a fungible ERC-20 representing a claim on the underlying DFI token (T) within a specific pool. VTs are minted either by the issuer (Standard Pool) or automatically when investors deposit assets (Custom Pool).
 
-## The Vesting Suite Architecture
+## How VT is Minted
 
-Each project using Minke has one **Vesting Suite**: a `Vault` + `ERC1155NFT` pair deployed by `VestingFactory`. Within a suite, the project owner creates individual **tranches** — each tranche has its own `VTToken` and `RedeemPool`.
+### Standard Pool — Issuer Mints Directly
 
-```
-VestingFactory
-  └── Vault  (holds project T tokens)
-        └── ERC1155NFT  (allocation NFTs)
-        └── Tranche 0
-              ├── VTToken   (ERC-20)
-              └── RedeemPool
-        └── Tranche 1
-              ├── VTToken
-              └── RedeemPool
-```
-
-## Minting VT
-
-VT is minted when a recipient stakes their ERC-1155 allocation NFT in the Vault:
+In a Standard Pool, the project owner calls `mintVT` to allocate VT to each investor:
 
 ```solidity
-function stakeNFT(uint256 trancheId, uint256 amount) external;
+function mintVT(address to, uint256 amount) external onlyProjectOwner;
 ```
 
-The Vault mints VT to the caller at a fixed rate set per tranche (`vtPerNft`):
+Each investor receives VT proportional to their vesting allocation. The issuer controls the distribution — no NFT staking or intermediary step required.
 
+### Custom Pool — Investor Deposits
+
+In a Custom Pool, investors deposit an asset and receive VT at the current oracle rate:
+
+```solidity
+function deposit(uint256 amount) external; // ERC-20 deposit
 ```
-Stake 1 NFT (Tranche 0, vtPerNft = 10,000)
-→ Vault mints 10,000 VT to the recipient
-```
 
-- **Only the Vault can mint VT.** The VTToken contract enforces this on-chain.
-- **Only the RedeemPool can burn VT.** Burns occur automatically when T is pulled from the Vault per the release schedule.
-
-VTs are standard ERC-20 tokens: freely transferable, tradable on any DEX.
+The rate is defined by the pool's `DFIOracle` (CURVE mode) and declines over time. Earlier depositors receive more VT per unit deposited.
 
 ## What VT Holders Can Do
 
 ### Option A — Stake in RedeemPool
 
-Stake VT in the tranche's `RedeemPool`. The pool automatically pulls T from the Vault per the vesting schedule and distributes it to stakers proportionally, minus a protocol fee (e.g. 5%):
+Stake VT in the pool's `RedeemPool`. The pool automatically pulls T from the vault per the DFIOracle schedule and distributes it proportionally, minus the protocol fee (e.g. 5%):
 
 ```solidity
-// Stake VT into RedeemPool
 function stakeVT(uint256 amount) external;
-
-// Claim accumulated T (fee already deducted at distribution)
 function claimT() external;
-
-// Withdraw remaining VT (by shares, not by VT amount)
-function withdrawVT(uint256 shares) external;
+function unstakeVT(uint256 shares) external;
 ```
 
 See [RedeemPool](/protocol/redeem-pool) for full mechanics.
 
 ### Option B — Trade on AMM
 
-VTs are standard ERC-20 tokens. Holders can sell them on DEX. Secondary buyers get discounted exposure to the underlying vesting stream.
+VTs are standard ERC-20 tokens. Holders can sell them on any DEX. Secondary buyers get discounted exposure to the underlying vesting stream.
 
-### Option C — Wait for Phase 2
+### Option C — Wait for Maturity
 
 Hold VT until the vesting schedule ends. Call `redeemVT()` on the RedeemPool for 1:1 redemption with no fee.
 
-## Phase 2: 1:1 Redemption
+## Maturity: 1:1 Redemption
 
 Once the release schedule has fully completed and `vestingEnded` is set to `true` on the RedeemPool, VT holders can redeem:
 
@@ -76,7 +57,7 @@ function redeemVT(uint256 vtAmount) external;
 Burns `vtAmount` VT 1:1 from the RedeemPool's `excessT` reserve. No protocol fee.
 
 <Callout type="tip">
-Phase 2 redemption is always exactly 1:1, with no protocol fee. VT holders who did not stake during Phase 1 can still redeem their full par value at maturity.
+Redemption at maturity is always exactly 1:1, with no protocol fee. VT holders who did not stake during the vesting period can still redeem their full par value at maturity.
 </Callout>
 
 ## VT Token Properties
@@ -84,29 +65,30 @@ Phase 2 redemption is always exactly 1:1, with no protocol fee. VT holders who d
 | Property | Value |
 |---|---|
 | Standard | ERC-20 |
-| Minting | Only Vault (on NFT stake) |
-| Burning | Only RedeemPool (on Vault T pull, or Phase 2 redeemVT) |
+| Minting (Standard Pool) | Only PoolVault, via `mintVT(to, amount)` called by project owner |
+| Minting (Custom Pool) | Only CustomVault, on investor `deposit()` |
+| Burning | RedeemPool (on T pull) or Vault (Maturity `redeemVT`) |
 | Transferability | Fully transferable — no restrictions |
 | Decimals | Matches the underlying token |
 
 ## Lifecycle Summary
 
 ```
-Project deposits T → Vault
-Project mints ERC-1155 NFTs → recipients
+Issuer deposits T → Vault
          ↓
-Recipients stake NFT → Vault mints VT (1:1 per vtPerNft)
+Standard Pool: Issuer calls mintVT(to, amount) for each investor
+Custom Pool:   Investor calls deposit(amount) → VT at rateAt(now)
          ↓
-     Phase 1 (vesting active)
+     Vesting period (active)
   ┌──────────────────────────────────────────────────┐
-  │  Stake VT in RedeemPool                         │
-  │  → BP pulls T from Vault per schedule            │
-  │  → Burns VT 1:1, distributes T (minus e.g., 5%)  │
-  │  → claimT() to receive T                         │
-  │  OR                                              │
-  │  Sell/trade VT on AMM at market price          │
+  │  Stake VT in RedeemPool                          │
+  │  → Pool pulls T from Vault per DFIOracle          │
+  │  → Burns VT 1:1, distributes T (minus fee)        │
+  │  → claimT() to receive T                          │
+  │  OR                                               │
+  │  Sell/trade VT on AMM at market price            │
   └──────────────────────────────────────────────────┘
          ↓
-     Phase 2 (vestingEnded = true)
+     Maturity (vestingEnded = true)
   redeemVT() → 1:1 T from excessT (no fee)
 ```

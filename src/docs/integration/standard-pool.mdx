@@ -1,0 +1,116 @@
+# Standard Pool Management
+
+URL: `/pool/<vault>`
+Accessible to: the connected wallet that deployed the pool (owner-only actions gated on-chain).
+
+For pool creation, see [Getting Started](/integration/getting-started).
+
+---
+
+## Stats Overview
+
+The top of the page shows live on-chain stats:
+
+| Stat | Description |
+|---|---|
+| **VT Issued** | Total VT minted so far (all investor allocations). |
+| **Total Allocation** | The `totalAmount` set at deployment — the full vesting budget. |
+| **Vault T Balance** | Live project-token balance held in the vault. |
+| **Pool Allowance** | Current T allowance granted to the Redeem Pool by the vault. |
+| **T Released** | Cumulative T that has been paid out to investors. |
+| **VT Staked** | Total VT currently staked in the Redeem Pool. |
+| **VT Burned** | Cumulative VT destroyed through investor claims. |
+| **Vesting Window** | Oracle start → end times and oracle mode (LINEAR / PIECEWISE). |
+
+A **release-schedule chart** (SVG) renders the piecewise curve with a "now" marker showing current progress.
+
+---
+
+## Deposit T into Vault
+
+**Section: DFI Tokens**
+
+1. Enter the amount of T to deposit (whole tokens).
+2. Click **Approve → Deposit**: the UI runs a two-step flow — first approves the vault to spend your T, then calls `depositTokens(amount)`. MetaMask prompts once for approve, once for deposit.
+3. Your wallet balance is shown for reference.
+
+<Callout type="warning">
+Deposit T **before** approving the Redeem Pool and minting VT. The Redeem Pool can only pay out T that is already in the vault.
+</Callout>
+
+---
+
+## Approve Redeem Pool
+
+**Section: DFI Tokens → Redeem Pool Allowance**
+
+The Redeem Pool must be authorised to pull T from the vault as vesting progresses.
+
+| Option | Description |
+|---|---|
+| **Unlimited ∞** | Sets `type(uint256).max` allowance — the pool can pull any amount at any time. Recommended for most programs. |
+| **Custom amount** | Sets an exact T allowance. Use when you want to cap the pool's draw authority. |
+
+Click **Set Unlimited Allowance** (or **Approve N T** for custom) and confirm in your wallet.
+
+<Callout type="warning">
+Investors cannot receive T until both steps are done: T deposited AND Redeem Pool approved.
+</Callout>
+
+---
+
+## Mint VT to Investors
+
+**Section: Mint VT to Investors**
+
+Each investor who should receive a vesting allocation gets VT minted directly to their wallet.
+
+| Field | Description |
+|---|---|
+| **Recipient Address** | The investor's EVM wallet address. |
+| **Amount** | Number of VT tokens to mint (in whole token units). |
+
+Click **Mint VT** and confirm the wallet transaction. Repeat for each investor. There is no batch mint in the UI — mint each investor separately or use a script.
+
+> VT represents an investor's proportional claim on the T vesting over time. Each VT staked in the Redeem Pool earns a share of T released per the oracle schedule.
+
+---
+
+## Redeem Pool Status
+
+**Section: Redeem Pool**
+
+Live stats from the Redeem Pool contract:
+
+| Stat | Description |
+|---|---|
+| **Total Staked VT** | VT currently locked in the pool earning T. |
+| **T Released** | Cumulative T already distributed to stakers. |
+| **Excess T** | T available for 1:1 redemption after vesting ends (un-distributed remainder). |
+| **Dust Protection** | Minimum VT staked before claims process (prevents zero-division). Default 1e18. |
+| **Paused** | Whether the pool is currently paused (no investor claims). |
+
+**Pause / Resume** — Locally pause the Redeem Pool (halts investor `claimT` / `unstakeVT`) without affecting the vault. Useful for emergency situations. Click **Pause Pool** or **Resume Pool** and confirm.
+
+**Dust Protection** — Adjust the minimum staked-VT threshold below which `_tryPullFromVault` is skipped. Click **Set Dust Protection**, enter the new value (in whole VT units), and confirm.
+
+---
+
+## End Vesting
+
+**Section: End Vesting**
+
+End Vesting converts the pool to maturity phase. Any un-released T becomes available for 1:1 `redeemVT` by investors.
+
+1. Tick **"I understand this action is permanent and cannot be undone"**.
+2. Click **End Vesting** and confirm the wallet transaction.
+
+After confirmation:
+- `vestingEnded = true` on the Redeem Pool.
+- No further oracle-driven T releases occur.
+- Investors can call `redeemVT` to burn VT and receive their proportional share of `excessT`.
+- The stats panel shows **"Maturity phase is active"** and the available `excessT` balance.
+
+<Callout type="warning">
+This action is **irreversible**. Only call End Vesting when the vesting period has concluded or you are intentionally terminating the program early.
+</Callout>

@@ -1,41 +1,41 @@
 # Redemption
 
-Minke's redemption model has two distinct phases: Phase 1 (gradual T distribution as tokens vest via the RedeemPool) and Phase 2 (1:1 redemption from the excessT reserve after vesting ends).
+Minke's redemption model has two distinct phases: the **vesting period** (gradual T distribution as tokens vest via the RedeemPool) and **Maturity** (1:1 redemption from the excessT reserve after vesting ends).
 
-## Phase 1: RedeemPool Staking
+## Vesting Period: RedeemPool Staking
 
-During Phase 1, VT holders can stake their VT in the RedeemPool to receive T as it vests from the Vault. The pool pulls T automatically based on the release schedule.
+During the vesting period, VT holders can stake their VT in the RedeemPool to receive T as it vests from the vault. The pool pulls T automatically based on the DFIOracle release schedule.
 
-### How Phase 1 Works
+### How It Works
 
 1. VT holder stakes VT in RedeemPool (`stakeVT`)
-2. RedeemPool pulls T from Vault per the release schedule
-3. For each T pulled: equivalent VT is burned 1:1; T is distributed to stakers proportionally (minus e.g., 5% protocol fee)
+2. RedeemPool pulls T from vault per the DFIOracle schedule
+3. For each T pulled: equivalent VT is burned 1:1; T is distributed to stakers proportionally (minus the protocol fee, e.g. 5%)
 4. Staker calls `claimT()` to withdraw their accumulated T
 
 ```
-Phase 1 flow:
-time passes → vault releases T → BP pulls T → burns VT
+Vesting period flow:
+time passes → vault releases T → RedeemPool pulls T → burns VT
 staker calls claimT() → receives pro-rata T (minus fee)
 ```
 
 <Callout type="info">
-Phase 1 claims are gradual. T arrives over the vesting schedule, not all at once. Each pull burns VT 1:1, reducing the staker's outstanding VT position over time.
+Claims during the vesting period are gradual. T arrives over the vesting schedule, not all at once. Each pull burns VT 1:1, reducing the staker's outstanding VT position over time.
 </Callout>
 
 ### Withdrawing From RedeemPool
 
-Stakers can withdraw at any time by calling `withdrawVT(uint256 shares)`. The parameter is the number of **shares** (not VT amount), because share value decreases as VT is burned during pulls. Pending claimable T remains withdrawable after exiting.
+Stakers can withdraw at any time by calling `unstakeVT(uint256 shares)`. The parameter is the number of **shares** (not VT amount), because share value decreases as VT is burned during pulls. Pending claimable T remains withdrawable after exiting.
 
-## Phase 2: 1:1 Redemption
+## Maturity: 1:1 Redemption
 
-### When Phase 2 Opens
+### When Maturity Opens
 
 Once the release schedule has fully run, `vestingEnded` is set to `true` on the RedeemPool. New staking is disabled. VT holders — including those who never staked — can now call `redeemVT()`.
 
 ### The excessT Reserve
 
-`excessT` accumulates in the RedeemPool when more T is pulled from the Vault than can be burned. This excess is reserved for Phase 2 1:1 redemptions.
+`excessT` accumulates in the RedeemPool when more T is pulled from the vault than can be burned. This excess is reserved for Maturity 1:1 redemptions.
 
 ### Redeeming VTs
 
@@ -47,16 +47,16 @@ Burns `vtAmount` VT from the caller's wallet and transfers an equal amount of T 
 
 ### Worked Example
 
-Suppose a tranche is created with 1,000,000 TOKEN in the Vault and 1,000,000 VT minted:
+Suppose a pool is created with 1,000,000 TOKEN in the vault and 1,000,000 VT minted:
 
 ```
-Phase 1 — RedeemPool activity:
-  Vault releases 600,000 T total (per schedule)
-  BP pulls 600,000 T → burns 600,000 VT
-  Stakers receive: 600,000 × 0.95 = 570,000 T  (95% after fee)
+Vesting period — RedeemPool activity:
+  Vault releases 600,000 T total (per DFIOracle schedule)
+  Pool pulls 600,000 T → burns 600,000 VT
+  Stakers receive: 600,000 × 0.95 = 570,000 T  (95% after 5% fee)
   Protocol receives:               30,000 T  (5% fee)
 
-Phase 2 begins:
+Maturity begins:
   excessT:          400,000 T remaining (1,000,000 − 600,000)
   VT outstanding:   400,000 VT remaining (1,000,000 − 600,000 burned)
 
@@ -66,25 +66,25 @@ redeemVT(400,000 VT):
   Rate: 1:1 exactly ✓
 ```
 
-<Callout type="tip" title="Phase 2 is always 1:1">
-Regardless of how much activity happened in Phase 1, outstanding VT always redeems 1:1 in Phase 2. No protocol fee applies.
+<Callout type="tip" title="Maturity is always 1:1">
+Regardless of how much activity happened during the vesting period, outstanding VT always redeems 1:1 at Maturity. No protocol fee applies.
 </Callout>
 
 ## Redemption Timeline
 
 | Event | Contract | Who Can Call | When |
 |---|---|---|---|
-| `stakeVT` | RedeemPool | VT holder | Phase 1 |
-| `claimT` | RedeemPool | Staker | Phase 1 |
-| `withdrawVT` | RedeemPool | Staker | Phase 1 |
-| `redeemVT` | RedeemPool | VT holder | Phase 2 only, 1:1 no fee |
+| `stakeVT` | RedeemPool | VT holder | Vesting period |
+| `claimT` | RedeemPool | Staker | Vesting period |
+| `unstakeVT` | RedeemPool | Staker | Vesting period |
+| `redeemVT` | RedeemPool | VT holder | Maturity only, 1:1 no fee |
 
 ## Edge Cases
 
-### What if nobody stakes in Phase 1?
+### What if nobody stakes during the vesting period?
 
-All T released from the Vault accumulates as `excessT` in the RedeemPool. No VT is burned. Phase 2 `redeemVT()` distributes the full amount 1:1 (minus any dust).
+All T released from the vault accumulates as `excessT` in the RedeemPool. No VT is burned. At Maturity, `redeemVT()` distributes the full amount 1:1 (minus any dust).
 
-### What if all VTs are burned in Phase 1?
+### What if all VTs are burned during the vesting period?
 
-All T has been distributed (minus fee). `excessT ≈ 0`, outstanding VT ≈ 0. Phase 2 has nothing to distribute — but no VTs remain to redeem either.
+All T has been distributed (minus fee). `excessT ≈ 0`, outstanding VT ≈ 0. At Maturity there is nothing to distribute — but no VTs remain to redeem either.

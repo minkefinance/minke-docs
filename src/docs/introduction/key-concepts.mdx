@@ -23,28 +23,47 @@ A future income stream where the amount depends on external factors — utilisat
 
 VFI requires Minke Phase 2 (Yield Token). Phase 1 VT is not suitable for VFI.
 
+## Pool Types
+
+Both pool types are created through the same two-stage flow: **Create DFI Oracle → Create Vault**. The mode is chosen when configuring the oracle.
+
+### Standard Pool
+
+A pool where the **issuer mints VT directly** to each investor. Components:
+- `DFIOracle` — LINEAR or PIECEWISE release schedule (configured in Create Oracle step)
+- `PoolVault` — holds DFI tokens T
+- `VTToken` — the pool's ERC-20 vesting token
+- `RedeemPool` — T distribution and staking contract
+
+Best for: token vesting programs, airdrops, lock-up schedules.
+
+### Custom Pool
+
+A pool where **investors deposit an asset to receive VT** at a declining rate. Components:
+- `DFIOracle` (CURVE mode) — rate-decay curve defining VT per asset over time (configured in Create Oracle step)
+- `CustomVault` — accepts investor deposits, mints VT at the current oracle rate
+- `VTToken` — the pool's ERC-20 vesting token
+- `RedeemPool` — T distribution and staking contract
+
+Best for: farming programs, DePIN rewards, loyalty programs.
+
 ## Protocol Primitives
 
-### Vesting Suite
+### DFI Oracle
 
-A project-level deployment consisting of a `Vault` and `ERC1155NFT` contract, created via `VestingFactory`. Each project has one suite; within it, the project owner creates individual tranches.
+A per-pool EIP-1167 clone storing all release schedule or rate curve data. Created first, before the vault is deployed. Three modes:
 
-### Tranche
-
-A specific vesting allocation within a suite, identified by a `trancheId`. Each tranche has:
-- A predictable vesting schedule (start, cliff, end, total amount)
-- Its own `VTToken` (ERC-20)
-- Its own `RedeemPool.`
-
-### ERC-1155 Allocation NFT
-
-A token representing a recipient's vesting allocation. The project owner mints these and distributes them to recipients. Staking an ERC-1155 NFT in the Vault mints VT to the holder at a fixed rate (`vtPerNft`).
+| Mode | Used by | Description |
+|---|---|---|
+| LINEAR | Standard Pool | Constant release rate between start and end |
+| PIECEWISE | Standard Pool | Stepped or ramped milestones (up to 6 breakpoints) |
+| CURVE | Custom Pool | Declining VT-per-asset rate from Base Rate to Min Rate |
 
 ### VT — Vesting Token
 
-A fungible ERC-20 is minted when recipients stake their ERC-1155 allocation NFTs in the Vault. VTs represent a claim on the underlying token at vesting maturity. They are:
-- Minted only by the Vault (on NFT stake)
-- Burned only by the RedeemPool (on T pulls, or Phase 2 redemption)
+A fungible ERC-20 representing a claim on the underlying token T within a specific pool. VTs are:
+- Minted only by the Vault (Standard Pool: `mintVT` by issuer; Custom Pool: on investor `deposit`)
+- Burned only by the RedeemPool (on T distributions) or at Maturity (`redeemVT`)
 - Freely tradable as a standard ERC-20
 
 ### YT — Yield Token (Phase 2)
@@ -53,17 +72,17 @@ A future token type designed for VFI streams with variable yield. Not yet live �
 
 ### RedeemPool
 
-The staking and distribution contract is deployed alongside each VTToken. VT holders stake VT here; the pool automatically pulls T from the Vault per the release schedule, burns VT 1:1 as T arrives, and distributes T to stakers proportionally. A protocol fee (e.g., 5%) is deducted from each distribution. After vesting ends, `redeemVT()` enables 1:1 Phase 2 redemption from the pool's `excessT` reserve.
+The staking and T-distribution contract deployed alongside each pool's VTToken. VT holders stake VT here; the pool lazily pulls T from the vault per the DFIOracle schedule, burns VT 1:1 as T arrives, and distributes T to stakers proportionally. A protocol fee is deducted from each distribution. After vesting ends, `redeemVT()` enables 1:1 Maturity redemption from the pool's `excessT` reserve.
 
 ## Staking Mechanics
 
 ### Shares
 
-When a user stakes VT in the RedeemPool, they receive shares at the current share-to-VT ratio. As VT is burned during T pulls, share value (in VT terms) decreases. Withdrawals from the RedeemPool are denominated in shares, not VT amount.
+When a user stakes VT in the RedeemPool, they receive shares at the current share-to-VT ratio. As VT is burned during T pulls, share value (in VT terms) decreases. Withdrawals from the RedeemPool are denominated in shares (`unstakeVT(shares)`), not VT amount.
 
 ### accVTPerShare
 
-A global accumulator tracking cumulative VT burned per share. Increases each time a T pull occurs, and VT is burned. Used to calculate each staker's proportional pending claimable T.
+A global accumulator tracking cumulative VT burned per share. Increases each time a T pull occurs and VT is burned. Used to calculate each staker's proportional pending claimable T.
 
 ### claimableT
 
@@ -77,12 +96,8 @@ The market-determined value today of a future cash flow. In Minke, VTs trade at 
 
 ### excessT
 
-T accumulated in the RedeemPool when more T arrives from the Vault than VT can be burned (e.g., near dust protection limits). Reserved for Phase 2 `redeemVT()` at 1:1.
+T accumulated in the RedeemPool when more T arrives from the vault than VT can be burned (e.g., near dust protection limits). Reserved for Maturity `redeemVT()` at 1:1.
 
 ### Protocol Fee
 
-A fee (e.g., 5%) is deducted from T distributions to RedeemPool stakers. Set as `userRewardRate` in basis points (e.g., 950 = 95% to stakers, 5% to protocol). Immutable after tranche deployment. Not charged at NFT staking, VT minting, or Phase 2 redemption.
-
-<Callout type="note">
-The fee rate is fixed at contract deployment. No admin key can change fee parameters post-deploy.
-</Callout>
+A fixed 5% fee deducted from T distributions to RedeemPool stakers (investors receive 95%). Not charged at VT minting or at Maturity redemption.

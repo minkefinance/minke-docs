@@ -22,14 +22,15 @@ Minke introduces a third option: **tokenize the future claim, trade the token to
 When you deposit a future-income position into Minke Protocol, you receive a **Vesting Token (VT)** — an ERC-20 representing a 1:1 claim on the underlying asset.
 
 VTs are:
-- **Fungible** — any VT from the same tranche is identical
+- **Fungible** — any VT from the same pool is identical
 - **Tradable** — list on any AMM or OTC desk immediately
 - **Composable** — use as collateral, borrow against them, or earn yield
 - **Redeemable** — present the VT at maturity for the underlying 1:1 (plus excess)
 
 ```
-Holder → deposits future position → smart contract → mints VT
-Buyer  → acquires VT at discount → trades, holds or stakes → claims at maturity
+Issuer  → creates pool → mints VT to investors
+Investor → stakes VT → claims T as it vests
+Buyer   → acquires VT at discount → holds or stakes → redeems at maturity
 ```
 
 ## Liquidity Solution
@@ -42,7 +43,7 @@ Traditional DeFi offers two extremes. Minke creates a new middle path:
 | Sell underlying | OTC | No |
 | **Minke VT** | **Immediate** | **Yes (via VT price)** |
 
-The protocol is non-custodial, oracle-free, and permissionless — any team, protocol, or institution can create a tranche for liquidity.
+The protocol is non-custodial, oracle-free, and permissionless — any team, protocol, or institution can create a pool for liquidity.
 
 ## Who It's For
 

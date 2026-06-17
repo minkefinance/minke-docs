@@ -38,8 +38,28 @@ In the near term (12–24 months), Minke targets:
 3. **Restaking operators** — EigenLayer AVS and equivalent streams
 4. **Tokenized government bonds** — RWA protocols with fixed maturity dates
 
-This segment alone represents an estimated **$50–100B notional** that could be wrapped in Minke tranches.
+This segment alone represents an estimated **$50–100B notional** that could be wrapped in Minke pools.
 
+## Competitive Landscape
+
+<Callout type="info">
+Minke is creating a new category — there is no direct competitor offering an oracle-free, fungible, on-chain vesting token primitive.
+</Callout>
+
+| Protocol | What it does | Gap vs Minke |
+|---|---|---|
+| Pendle Finance | Yield stripping for liquid staking | VFI only, no DFI support, oracle-dependent pricing |
+| Ribbon Finance | Structured products on options | Options, not vesting claims |
+| OTC Vesting Desks | Off-chain secondary market | 15–40% spread, no on-chain composability |
+| Yearn / Convex | Yield optimisation | No future-income tokenisation |
+
+## Why Minke Wins
+
+**Oracle-free architecture.** Because DFI schedules are deterministic, Minke doesn't need a price feed. This removes the #1 systemic risk in DeFi — oracle manipulation.
+
+**1:1 backing at maturity.** VT holders have a mathematical guarantee of par redemption at maturity (less the e.g. 5% protocol fee on vesting distributions). This is a first in DeFi future-income primitives.
+
+**Permissionless composability.** Any protocol can create a pool with no permission required. VTs immediately slot into existing AMM, lending, and structured-product infrastructure.
 
 ## Timing
 
@@ -55,5 +75,5 @@ EigenLayer has crossed $15B TVL. Operators earn complex, multi-source yield stre
 Compliance-conscious capital wants predictable-maturity instruments. Minke's VT format — predictable schedule, deterministic payout — maps directly to institutional predictable-income needs.
 
 <Callout type="tip" title="The convergence thesis">
-TradFi is tokenizing cash flows. DeFi is maturing into a predictable income. Minke is the infrastructure that makes these two trends composable.
+TradFi is tokenizing cash flows. DeFi is maturing into predictable income. Minke is the infrastructure that makes these two trends composable.
 </Callout>
